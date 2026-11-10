@@ -1,95 +1,105 @@
-import type { Match, Team, TournamentTeamStats } from '../types/cricket';
+import type { Match, Team, TournamentTeamStats, LeaderboardStats } from '../types/cricket';
 
 export const DEFAULT_TEAMS: Team[] = [
   {
     id: 'team-ind',
     name: 'India Champions',
     shortName: 'IND',
-    color: '#0055A5', // Iconic India Blue
+    color: '#0055A5',
     secondaryColor: '#FF9933',
     logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=80',
     players: [
-      { id: 'ind-1', name: 'Rohit Sharma (C)', role: 'batsman', matches: 152, runs: 4231, highestScore: 118 },
-      { id: 'ind-2', name: 'Virat Kohli', role: 'batsman', matches: 125, runs: 4188, highestScore: 122 },
-      { id: 'ind-3', name: 'Suryakumar Yadav', role: 'batsman', matches: 68, runs: 2340, highestScore: 117 },
-      { id: 'ind-4', name: 'Rishabh Pant (WK)', role: 'wicketkeeper', matches: 74, runs: 1158, highestScore: 65 },
-      { id: 'ind-5', name: 'Hardik Pandya', role: 'allrounder', matches: 102, runs: 1640, wickets: 86, highestScore: 71 },
-      { id: 'ind-6', name: 'Shivam Dube', role: 'allrounder', matches: 33, runs: 448, wickets: 14, highestScore: 63 },
-      { id: 'ind-7', name: 'Ravindra Jadeja', role: 'allrounder', matches: 74, runs: 515, wickets: 54, highestScore: 46 },
-      { id: 'ind-8', name: 'Axar Patel', role: 'allrounder', matches: 60, runs: 453, wickets: 58, highestScore: 65 },
-      { id: 'ind-9', name: 'Kuldeep Yadav', role: 'bowler', matches: 40, runs: 46, wickets: 69, highestScore: 23 },
-      { id: 'ind-10', name: 'Jasprit Bumrah', role: 'bowler', matches: 70, runs: 26, wickets: 89, highestScore: 14 },
-      { id: 'ind-11', name: 'Arshdeep Singh', role: 'bowler', matches: 54, runs: 15, wickets: 87, highestScore: 10 },
+      { id: 'ind-1', name: 'Rohit Sharma (C)', role: 'batsman', battingStyle: 'RHB', bowlingStyle: 'Right-arm Spin', matches: 159, innings: 151, runs: 4231, highestScore: 121, fifties: 32, hundreds: 5, strikeRate: 140.89, battingAverage: 32.05, wickets: 1, bowlingEconomy: 9.12, bestBowling: '1/22', catches: 65, runOuts: 12 },
+      { id: 'ind-2', name: 'Virat Kohli', role: 'batsman', battingStyle: 'RHB', bowlingStyle: 'Right-arm Medium', matches: 125, innings: 117, runs: 4188, highestScore: 122, fifties: 38, hundreds: 1, strikeRate: 137.04, battingAverage: 48.69, wickets: 4, bowlingEconomy: 8.05, bestBowling: '1/13', catches: 54, runOuts: 9 },
+      { id: 'ind-3', name: 'Suryakumar Yadav', role: 'batsman', battingStyle: 'RHB', bowlingStyle: 'Right-arm Spin', matches: 71, innings: 68, runs: 2432, highestScore: 117, fifties: 20, hundreds: 4, strikeRate: 168.42, battingAverage: 42.66, wickets: 0, bowlingEconomy: 8.50, bestBowling: '0/8', catches: 41, runOuts: 4 },
+      { id: 'ind-4', name: 'Rishabh Pant (WK)', role: 'wicketkeeper', battingStyle: 'LHB', matches: 76, innings: 66, runs: 1209, highestScore: 65, fifties: 3, hundreds: 0, strikeRate: 126.72, battingAverage: 23.25, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 44, runOuts: 18 },
+      { id: 'ind-5', name: 'Hardik Pandya', role: 'allrounder', battingStyle: 'RHB', bowlingStyle: 'Right-arm Fast', matches: 104, innings: 82, runs: 1640, highestScore: 71, fifties: 4, hundreds: 0, strikeRate: 140.53, battingAverage: 27.33, wickets: 86, bowlingEconomy: 8.14, bestBowling: '4/16', catches: 48, runOuts: 8 },
+      { id: 'ind-6', name: 'Shivam Dube', role: 'allrounder', battingStyle: 'LHB', bowlingStyle: 'Right-arm Medium', matches: 33, innings: 24, runs: 448, highestScore: 63, fifties: 3, hundreds: 0, strikeRate: 139.56, battingAverage: 29.86, wickets: 14, bowlingEconomy: 9.38, bestBowling: '3/30', catches: 11, runOuts: 2 },
+      { id: 'ind-7', name: 'Ravindra Jadeja', role: 'allrounder', battingStyle: 'LHB', bowlingStyle: 'Left-arm Spin', matches: 74, innings: 41, runs: 515, highestScore: 46, fifties: 0, hundreds: 0, strikeRate: 127.16, battingAverage: 21.45, wickets: 54, bowlingEconomy: 7.13, bestBowling: '3/15', catches: 28, runOuts: 14 },
+      { id: 'ind-8', name: 'Axar Patel', role: 'allrounder', battingStyle: 'LHB', bowlingStyle: 'Left-arm Spin', matches: 60, innings: 38, runs: 453, highestScore: 65, fifties: 1, hundreds: 0, strikeRate: 144.72, battingAverage: 20.59, wickets: 58, bowlingEconomy: 7.34, bestBowling: '3/9', catches: 22, runOuts: 6 },
+      { id: 'ind-9', name: 'Kuldeep Yadav', role: 'bowler', battingStyle: 'LHB', bowlingStyle: 'Left-arm Spin', matches: 40, innings: 12, runs: 46, highestScore: 23, fifties: 0, hundreds: 0, strikeRate: 74.19, battingAverage: 7.66, wickets: 69, bowlingEconomy: 6.74, bestBowling: '5/17', catches: 12, runOuts: 1 },
+      { id: 'ind-10', name: 'Jasprit Bumrah', role: 'bowler', battingStyle: 'RHB', bowlingStyle: 'Right-arm Fast', matches: 70, innings: 14, runs: 26, highestScore: 14, fifties: 0, hundreds: 0, strikeRate: 61.90, battingAverage: 4.33, wickets: 89, bowlingEconomy: 6.27, bestBowling: '3/7', catches: 16, runOuts: 3 },
+      { id: 'ind-11', name: 'Arshdeep Singh', role: 'bowler', battingStyle: 'LHB', bowlingStyle: 'Left-arm Fast', matches: 54, innings: 10, runs: 15, highestScore: 10, fifties: 0, hundreds: 0, strikeRate: 55.55, battingAverage: 3.00, wickets: 87, bowlingEconomy: 8.32, bestBowling: '4/9', catches: 14, runOuts: 2 },
     ]
   },
   {
     id: 'team-aus',
     name: 'Aussie Gladiators',
     shortName: 'AUS',
-    color: '#D4AF37', // Australian Gold / Canary
+    color: '#D4AF37',
     secondaryColor: '#005930',
     logo: 'https://images.unsplash.com/photo-1531415074868-036b107e7752?w=150&auto=format&fit=crop&q=80',
     players: [
-      { id: 'aus-1', name: 'Travis Head', role: 'batsman', matches: 38, runs: 1092, highestScore: 91 },
-      { id: 'aus-2', name: 'David Warner', role: 'batsman', matches: 110, runs: 3277, highestScore: 100 },
-      { id: 'aus-3', name: 'Mitchell Marsh (C)', role: 'allrounder', matches: 61, runs: 1445, wickets: 17, highestScore: 92 },
-      { id: 'aus-4', name: 'Glenn Maxwell', role: 'allrounder', matches: 106, runs: 2600, wickets: 43, highestScore: 145 },
-      { id: 'aus-5', name: 'Marcus Stoinis', role: 'allrounder', matches: 68, runs: 1120, wickets: 34, highestScore: 78 },
-      { id: 'aus-6', name: 'Tim David', role: 'batsman', matches: 49, runs: 1060, highestScore: 92 },
-      { id: 'aus-7', name: 'Matthew Wade (WK)', role: 'wicketkeeper', matches: 92, runs: 1202, highestScore: 80 },
-      { id: 'aus-8', name: 'Pat Cummins', role: 'bowler', matches: 57, runs: 185, wickets: 66, highestScore: 28 },
-      { id: 'aus-9', name: 'Mitchell Starc', role: 'bowler', matches: 65, runs: 94, wickets: 79, highestScore: 17 },
-      { id: 'aus-10', name: 'Adam Zampa', role: 'bowler', matches: 87, runs: 65, wickets: 111, highestScore: 13 },
-      { id: 'aus-11', name: 'Josh Hazlewood', role: 'bowler', matches: 51, runs: 22, wickets: 67, highestScore: 11 },
+      { id: 'aus-1', name: 'Travis Head', role: 'batsman', battingStyle: 'LHB', bowlingStyle: 'Right-arm Spin', matches: 38, innings: 36, runs: 1092, highestScore: 91, fifties: 6, hundreds: 0, strikeRate: 158.48, battingAverage: 33.09, wickets: 2, bowlingEconomy: 8.75, bestBowling: '1/12', catches: 18, runOuts: 3 },
+      { id: 'aus-2', name: 'David Warner', role: 'batsman', battingStyle: 'LHB', matches: 110, innings: 110, runs: 3277, highestScore: 100, fifties: 26, hundreds: 1, strikeRate: 142.47, battingAverage: 33.43, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 42, runOuts: 8 },
+      { id: 'aus-3', name: 'Mitchell Marsh (C)', role: 'allrounder', battingStyle: 'RHB', bowlingStyle: 'Right-arm Medium', matches: 61, innings: 57, runs: 1445, highestScore: 92, fifties: 9, hundreds: 0, strikeRate: 135.29, battingAverage: 32.11, wickets: 17, bowlingEconomy: 8.35, bestBowling: '3/24', catches: 24, runOuts: 4 },
+      { id: 'aus-4', name: 'Glenn Maxwell', role: 'allrounder', battingStyle: 'RHB', bowlingStyle: 'Right-arm Spin', matches: 106, innings: 98, runs: 2600, highestScore: 145, fifties: 11, hundreds: 5, strikeRate: 155.50, battingAverage: 29.54, wickets: 43, bowlingEconomy: 7.55, bestBowling: '3/10', catches: 49, runOuts: 9 },
+      { id: 'aus-5', name: 'Marcus Stoinis', role: 'allrounder', battingStyle: 'RHB', bowlingStyle: 'Right-arm Medium', matches: 68, innings: 55, runs: 1120, highestScore: 78, fifties: 4, hundreds: 0, strikeRate: 145.26, battingAverage: 30.27, wickets: 34, bowlingEconomy: 8.45, bestBowling: '3/19', catches: 27, runOuts: 3 },
+      { id: 'aus-6', name: 'Tim David', role: 'batsman', battingStyle: 'RHB', matches: 49, innings: 41, runs: 1060, highestScore: 92, fifties: 5, hundreds: 0, strikeRate: 163.58, battingAverage: 34.19, wickets: 1, bowlingEconomy: 10.20, bestBowling: '1/18', catches: 26, runOuts: 2 },
+      { id: 'aus-7', name: 'Matthew Wade (WK)', role: 'wicketkeeper', battingStyle: 'LHB', matches: 92, innings: 66, runs: 1202, highestScore: 80, fifties: 3, hundreds: 0, strikeRate: 134.45, battingAverage: 26.13, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 58, runOuts: 15 },
+      { id: 'aus-8', name: 'Pat Cummins', role: 'bowler', battingStyle: 'RHB', bowlingStyle: 'Right-arm Fast', matches: 57, innings: 30, runs: 185, highestScore: 28, fifties: 0, hundreds: 0, strikeRate: 120.91, battingAverage: 12.33, wickets: 66, bowlingEconomy: 7.42, bestBowling: '3/15', catches: 19, runOuts: 4 },
+      { id: 'aus-9', name: 'Mitchell Starc', role: 'bowler', battingStyle: 'LHB', bowlingStyle: 'Left-arm Fast', matches: 65, innings: 19, runs: 94, highestScore: 17, fifties: 0, hundreds: 0, strikeRate: 85.45, battingAverage: 9.40, wickets: 79, bowlingEconomy: 7.74, bestBowling: '4/20', catches: 18, runOuts: 3 },
+      { id: 'aus-10', name: 'Adam Zampa', role: 'bowler', battingStyle: 'RHB', bowlingStyle: 'Right-arm Spin', matches: 87, innings: 18, runs: 65, highestScore: 13, fifties: 0, hundreds: 0, strikeRate: 70.65, battingAverage: 5.90, wickets: 111, bowlingEconomy: 7.20, bestBowling: '5/19', catches: 21, runOuts: 1 },
+      { id: 'aus-11', name: 'Josh Hazlewood', role: 'bowler', battingStyle: 'LHB', bowlingStyle: 'Right-arm Fast', matches: 51, innings: 9, runs: 22, highestScore: 11, fifties: 0, hundreds: 0, strikeRate: 64.70, battingAverage: 4.40, wickets: 67, bowlingEconomy: 7.48, bestBowling: '4/12', catches: 14, runOuts: 2 },
     ]
   },
   {
     id: 'team-csk',
-    name: 'Chennai Super Lions',
+    name: 'Chennai Super Kings',
     shortName: 'CSK',
-    color: '#FACC15', // Whistle Podu Yellow
+    color: '#FACC15',
     secondaryColor: '#1E3A8A',
     logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=80',
     players: [
-      { id: 'csk-1', name: 'Ruturaj Gaikwad (C)', role: 'batsman', matches: 52, runs: 1798, highestScore: 108 },
-      { id: 'csk-2', name: 'Devon Conway', role: 'batsman', matches: 23, runs: 924, highestScore: 92 },
-      { id: 'csk-3', name: 'Shivam Dube', role: 'allrounder', matches: 45, runs: 1104, highestScore: 95 },
-      { id: 'csk-4', name: 'MS Dhoni (WK)', role: 'wicketkeeper', matches: 260, runs: 5243, highestScore: 84 },
-      { id: 'csk-5', name: 'Ravindra Jadeja', role: 'allrounder', matches: 240, runs: 2959, wickets: 160, highestScore: 62 },
+      { id: 'csk-1', name: 'Ruturaj Gaikwad (C)', role: 'batsman', battingStyle: 'RHB', matches: 62, innings: 61, runs: 2380, highestScore: 108, fifties: 18, hundreds: 2, strikeRate: 136.89, battingAverage: 39.01, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 32, runOuts: 5 },
+      { id: 'csk-2', name: 'Devon Conway', role: 'batsman', battingStyle: 'LHB', matches: 23, innings: 22, runs: 924, highestScore: 92, fifties: 9, hundreds: 0, strikeRate: 141.28, battingAverage: 48.63, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 14, runOuts: 2 },
+      { id: 'csk-3', name: 'Shivam Dube', role: 'allrounder', battingStyle: 'LHB', bowlingStyle: 'Right-arm Medium', matches: 51, innings: 46, runs: 1320, highestScore: 95, fifties: 8, hundreds: 0, strikeRate: 156.40, battingAverage: 32.19, wickets: 4, bowlingEconomy: 9.80, bestBowling: '2/18', catches: 15, runOuts: 1 },
+      { id: 'csk-4', name: 'MS Dhoni (WK)', role: 'wicketkeeper', battingStyle: 'RHB', matches: 264, innings: 229, runs: 5243, highestScore: 84, fifties: 24, hundreds: 0, strikeRate: 137.53, battingAverage: 39.12, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 152, runOuts: 42 },
+      { id: 'csk-5', name: 'Ravindra Jadeja', role: 'allrounder', battingStyle: 'LHB', bowlingStyle: 'Left-arm Spin', matches: 240, innings: 180, runs: 2959, highestScore: 62, fifties: 3, hundreds: 0, strikeRate: 129.78, battingAverage: 27.39, wickets: 160, bowlingEconomy: 7.62, bestBowling: '5/16', catches: 105, runOuts: 26 },
     ]
   },
   {
     id: 'team-mi',
-    name: 'Mumbai Paltan',
+    name: 'Mumbai Indians',
     shortName: 'MI',
-    color: '#004BA0', // MI Blue
+    color: '#004BA0',
     secondaryColor: '#D1AB3E',
     logo: 'https://images.unsplash.com/photo-1531415074868-036b107e7752?w=150&auto=format&fit=crop&q=80',
     players: [
-      { id: 'mi-1', name: 'Rohit Sharma', role: 'batsman', matches: 257, runs: 6628, highestScore: 109 },
-      { id: 'mi-2', name: 'Ishan Kishan (WK)', role: 'wicketkeeper', matches: 105, runs: 2644, highestScore: 99 },
-      { id: 'mi-3', name: 'Suryakumar Yadav', role: 'batsman', matches: 150, runs: 3594, highestScore: 103 },
-      { id: 'mi-4', name: 'Hardik Pandya (C)', role: 'allrounder', matches: 137, runs: 2525, wickets: 64, highestScore: 91 },
-      { id: 'mi-5', name: 'Jasprit Bumrah', role: 'bowler', matches: 133, runs: 69, wickets: 165, highestScore: 16 },
+      { id: 'mi-1', name: 'Rohit Sharma', role: 'batsman', battingStyle: 'RHB', matches: 257, innings: 252, runs: 6628, highestScore: 109, fifties: 43, hundreds: 2, strikeRate: 131.14, battingAverage: 29.72, wickets: 15, bowlingEconomy: 8.02, bestBowling: '4/6', catches: 101, runOuts: 19 },
+      { id: 'mi-2', name: 'Ishan Kishan (WK)', role: 'wicketkeeper', battingStyle: 'LHB', matches: 105, innings: 99, runs: 2644, highestScore: 99, fifties: 16, hundreds: 0, strikeRate: 135.86, battingAverage: 28.43, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 62, runOuts: 14 },
+      { id: 'mi-3', name: 'Suryakumar Yadav', role: 'batsman', battingStyle: 'RHB', matches: 150, innings: 135, runs: 3594, highestScore: 103, fifties: 24, hundreds: 2, strikeRate: 145.32, battingAverage: 32.08, wickets: 0, bowlingEconomy: 0, bestBowling: '0/0', catches: 75, runOuts: 8 },
+      { id: 'mi-4', name: 'Hardik Pandya (C)', role: 'allrounder', battingStyle: 'RHB', bowlingStyle: 'Right-arm Fast', matches: 137, innings: 128, runs: 2525, highestScore: 91, fifties: 10, hundreds: 0, strikeRate: 146.03, battingAverage: 28.69, wickets: 64, bowlingEconomy: 9.06, bestBowling: '3/17', catches: 64, runOuts: 11 },
+      { id: 'mi-5', name: 'Jasprit Bumrah', role: 'bowler', battingStyle: 'RHB', bowlingStyle: 'Right-arm Fast', matches: 133, innings: 38, runs: 69, highestScore: 16, fifties: 0, hundreds: 0, strikeRate: 68.31, battingAverage: 7.66, wickets: 165, bowlingEconomy: 7.30, bestBowling: '5/10', catches: 34, runOuts: 7 },
     ]
   }
 ];
 
 export const INITIAL_MATCH: Match = {
   id: 'match-wc-final-2024',
-  title: 'World Championship Grand Final',
+  title: 'ICC World Championship Grand Final',
   venue: 'Kensington Oval, Bridgetown / Narendra Modi Stadium',
   date: 'Today, 07:30 PM IST',
   overs: 20,
+  maxOversPerBowler: 4,
   ballType: 'leather_white',
   matchType: 'T20',
   teamA: DEFAULT_TEAMS[0],
   teamB: DEFAULT_TEAMS[1],
   tossWinnerId: 'team-ind',
   tossDecision: 'bat',
-  currentInningIndex: 0,
+  currentInningIndex: 1, // 2nd inning live!
   selectedTheme: 'wcFinal',
   status: 'live',
+  info: {
+    matchNumber: 'Final (Match 55)',
+    series: 'ICC Men\'s World Championship',
+    umpires: ['Richard Illingworth', 'Chris Gaffaney'],
+    scorer: 'FanClub Official Scorer',
+    tossWinner: 'India Champions',
+    tossDecision: 'bat',
+    pitchCondition: 'Balanced Grass Turf'
+  },
   innings: [
     {
       teamId: 'team-ind',
@@ -103,6 +113,22 @@ export const INITIAL_MATCH: Match = {
       currentStrikerId: 'ind-2',
       currentNonStrikerId: 'ind-5',
       currentBowlerId: 'aus-8',
+      fallOfWickets: [
+        { wicketNumber: 1, score: 23, overs: '1.4', batsmanName: 'Rohit Sharma', batsmanId: 'ind-1' },
+        { wicketNumber: 2, score: 23, overs: '1.6', batsmanName: 'Rishabh Pant', batsmanId: 'ind-4' },
+        { wicketNumber: 3, score: 34, overs: '4.3', batsmanName: 'Suryakumar Yadav', batsmanId: 'ind-3' },
+        { wicketNumber: 4, score: 106, overs: '13.3', batsmanName: 'Axar Patel', batsmanId: 'ind-8' },
+        { wicketNumber: 5, score: 163, overs: '18.5', batsmanName: 'Shivam Dube', batsmanId: 'ind-6' },
+        { wicketNumber: 6, score: 174, overs: '19.4', batsmanName: 'Virat Kohli', batsmanId: 'ind-2' },
+        { wicketNumber: 7, score: 176, overs: '19.6', batsmanName: 'Ravindra Jadeja', batsmanId: 'ind-7' },
+      ],
+      partnerships: [
+        { wicketIndex: 1, batsman1Name: 'Rohit Sharma', batsman1Runs: 9, batsman2Name: 'Virat Kohli', batsman2Runs: 14, totalRuns: 23, totalBalls: 10 },
+        { wicketIndex: 2, batsman1Name: 'Rishabh Pant', batsman1Runs: 0, batsman2Name: 'Virat Kohli', batsman2Runs: 0, totalRuns: 0, totalBalls: 2 },
+        { wicketIndex: 3, batsman1Name: 'Suryakumar Yadav', batsman1Runs: 3, batsman2Name: 'Virat Kohli', batsman2Runs: 8, totalRuns: 11, totalBalls: 15 },
+        { wicketIndex: 4, batsman1Name: 'Axar Patel', batsman1Runs: 47, batsman2Name: 'Virat Kohli', batsman2Runs: 24, totalRuns: 72, totalBalls: 54 },
+        { wicketIndex: 5, batsman1Name: 'Shivam Dube', batsman1Runs: 27, batsman2Name: 'Virat Kohli', batsman2Runs: 28, totalRuns: 57, totalBalls: 33 },
+      ],
       batsmen: [
         { playerId: 'ind-1', name: 'Rohit Sharma (C)', runs: 9, balls: 5, fours: 2, sixes: 0, strikeRate: 180.0, isOut: true, dismissal: 'c Head b Maharaj', bowlerName: 'Maharaj' },
         { playerId: 'ind-2', name: 'Virat Kohli', runs: 76, balls: 59, fours: 6, sixes: 2, strikeRate: 128.8, isOut: true, dismissal: 'c Rabada b Jansen', bowlerName: 'Jansen' },
@@ -114,11 +140,11 @@ export const INITIAL_MATCH: Match = {
         { playerId: 'ind-7', name: 'Ravindra Jadeja', runs: 2, balls: 2, fours: 0, sixes: 0, strikeRate: 100.0, isOut: true, dismissal: 'c Jansen b Nortje', bowlerName: 'Nortje' },
       ],
       bowlers: [
-        { playerId: 'aus-9', name: 'Mitchell Starc', overs: 4, maidens: 0, runsConceded: 36, wickets: 1, economy: 9.0, wides: 1, noBalls: 0, dots: 11 },
-        { playerId: 'aus-8', name: 'Pat Cummins', overs: 4, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 2, noBalls: 0, dots: 13 },
-        { playerId: 'aus-10', name: 'Adam Zampa', overs: 4, maidens: 0, runsConceded: 28, wickets: 1, economy: 7.0, wides: 0, noBalls: 0, dots: 14 },
-        { playerId: 'aus-11', name: 'Josh Hazlewood', overs: 4, maidens: 0, runsConceded: 44, wickets: 2, economy: 11.0, wides: 1, noBalls: 1, dots: 9 },
-        { playerId: 'aus-4', name: 'Glenn Maxwell', overs: 4, maidens: 0, runsConceded: 30, wickets: 0, economy: 7.5, wides: 1, noBalls: 0, dots: 10 },
+        { playerId: 'aus-9', name: 'Mitchell Starc', overs: 4, maidens: 0, runsConceded: 36, wickets: 1, economy: 9.0, wides: 1, noBalls: 0, dots: 11, foursConceded: 4, sixesConceded: 1 },
+        { playerId: 'aus-8', name: 'Pat Cummins', overs: 4, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 2, noBalls: 0, dots: 13, foursConceded: 3, sixesConceded: 1 },
+        { playerId: 'aus-10', name: 'Adam Zampa', overs: 4, maidens: 0, runsConceded: 28, wickets: 1, economy: 7.0, wides: 0, noBalls: 0, dots: 14, foursConceded: 2, sixesConceded: 1 },
+        { playerId: 'aus-11', name: 'Josh Hazlewood', overs: 4, maidens: 0, runsConceded: 44, wickets: 2, economy: 11.0, wides: 1, noBalls: 1, dots: 9, foursConceded: 5, sixesConceded: 2 },
+        { playerId: 'aus-4', name: 'Glenn Maxwell', overs: 4, maidens: 0, runsConceded: 30, wickets: 0, economy: 7.5, wides: 1, noBalls: 0, dots: 10, foursConceded: 3, sixesConceded: 1 },
       ],
       balls: [
         {
@@ -153,6 +179,21 @@ export const INITIAL_MATCH: Match = {
       currentStrikerId: 'aus-8',
       currentNonStrikerId: 'aus-10',
       currentBowlerId: 'ind-10',
+      fallOfWickets: [
+        { wicketNumber: 1, score: 7, overs: '1.2', batsmanName: 'David Warner', batsmanId: 'aus-2' },
+        { wicketNumber: 2, score: 48, overs: '5.1', batsmanName: 'Travis Head', batsmanId: 'aus-1' },
+        { wicketNumber: 3, score: 102, overs: '11.4', batsmanName: 'Mitchell Marsh', batsmanId: 'aus-3' },
+        { wicketNumber: 4, score: 133, overs: '14.5', batsmanName: 'Glenn Maxwell', batsmanId: 'aus-4' },
+        { wicketNumber: 5, score: 147, overs: '16.3', batsmanName: 'Marcus Stoinis', batsmanId: 'aus-5' },
+        { wicketNumber: 6, score: 154, overs: '17.4', batsmanName: 'Tim David', batsmanId: 'aus-6' },
+        { wicketNumber: 7, score: 159, overs: '18.2', batsmanName: 'Matthew Wade', batsmanId: 'aus-7' },
+        { wicketNumber: 8, score: 160, overs: '18.6', batsmanName: 'Mitchell Starc', batsmanId: 'aus-9' },
+      ],
+      partnerships: [
+        { wicketIndex: 1, batsman1Name: 'David Warner', batsman1Runs: 12, batsman2Name: 'Travis Head', batsman2Runs: 15, totalRuns: 27, totalBalls: 16 },
+        { wicketIndex: 2, batsman1Name: 'Mitchell Marsh', batsman1Runs: 21, batsman2Name: 'Travis Head', batsman2Runs: 19, totalRuns: 40, totalBalls: 24 },
+        { wicketIndex: 3, batsman1Name: 'Mitchell Marsh', batsman1Runs: 21, batsman2Name: 'Glenn Maxwell', batsman2Runs: 28, totalRuns: 54, totalBalls: 38 },
+      ],
       batsmen: [
         { playerId: 'aus-1', name: 'Travis Head', runs: 34, balls: 21, fours: 4, sixes: 1, strikeRate: 161.9, isOut: true, dismissal: 'b Bumrah', bowlerName: 'Jasprit Bumrah' },
         { playerId: 'aus-2', name: 'David Warner', runs: 12, balls: 9, fours: 2, sixes: 0, strikeRate: 133.3, isOut: true, dismissal: 'c Pant b Arshdeep', bowlerName: 'Arshdeep Singh' },
@@ -165,11 +206,11 @@ export const INITIAL_MATCH: Match = {
         { playerId: 'aus-10', name: 'Adam Zampa', runs: 0, balls: 4, fours: 0, sixes: 0, strikeRate: 0.0, isOut: false },
       ],
       bowlers: [
-        { playerId: 'ind-11', name: 'Arshdeep Singh', overs: 4, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 1, noBalls: 0, dots: 12 },
-        { playerId: 'ind-10', name: 'Jasprit Bumrah', overs: 3.3, maidens: 0, runsConceded: 18, wickets: 2, economy: 5.14, wides: 0, noBalls: 0, dots: 16 },
-        { playerId: 'ind-8', name: 'Axar Patel', overs: 4, maidens: 0, runsConceded: 38, wickets: 1, economy: 9.5, wides: 1, noBalls: 0, dots: 9 },
-        { playerId: 'ind-9', name: 'Kuldeep Yadav', overs: 4, maidens: 0, runsConceded: 35, wickets: 1, economy: 8.75, wides: 0, noBalls: 0, dots: 10 },
-        { playerId: 'ind-5', name: 'Hardik Pandya', overs: 4, maidens: 0, runsConceded: 30, wickets: 2, economy: 7.5, wides: 2, noBalls: 0, dots: 11 },
+        { playerId: 'ind-11', name: 'Arshdeep Singh', overs: 4, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 1, noBalls: 0, dots: 12, foursConceded: 3, sixesConceded: 1 },
+        { playerId: 'ind-10', name: 'Jasprit Bumrah', overs: 3.3, maidens: 0, runsConceded: 18, wickets: 2, economy: 5.14, wides: 0, noBalls: 0, dots: 16, foursConceded: 1, sixesConceded: 0 },
+        { playerId: 'ind-8', name: 'Axar Patel', overs: 4, maidens: 0, runsConceded: 38, wickets: 1, economy: 9.5, wides: 1, noBalls: 0, dots: 9, foursConceded: 3, sixesConceded: 2 },
+        { playerId: 'ind-9', name: 'Kuldeep Yadav', overs: 4, maidens: 0, runsConceded: 35, wickets: 1, economy: 8.75, wides: 0, noBalls: 0, dots: 10, foursConceded: 3, sixesConceded: 1 },
+        { playerId: 'ind-5', name: 'Hardik Pandya', overs: 4, maidens: 0, runsConceded: 30, wickets: 2, economy: 7.5, wides: 2, noBalls: 0, dots: 11, foursConceded: 2, sixesConceded: 1 },
       ],
       balls: [
         {
@@ -232,8 +273,16 @@ export const INITIAL_MATCH: Match = {
 };
 
 export const TOURNAMENT_STANDINGS: TournamentTeamStats[] = [
-  { teamId: 'team-ind', teamName: 'India Champions', teamColor: '#0055A5', played: 5, won: 5, lost: 0, tied: 0, points: 10, nrr: +1.450 },
-  { teamId: 'team-aus', teamName: 'Aussie Gladiators', teamColor: '#D4AF37', played: 5, won: 4, lost: 1, tied: 0, points: 8, nrr: +0.892 },
-  { teamId: 'team-csk', teamName: 'Chennai Super Lions', teamColor: '#FACC15', played: 5, won: 3, lost: 2, tied: 0, points: 6, nrr: +0.340 },
-  { teamId: 'team-mi', teamName: 'Mumbai Paltan', teamColor: '#004BA0', played: 5, won: 2, lost: 3, tied: 0, points: 4, nrr: -0.125 },
+  { teamId: 'team-ind', teamName: 'India Champions', teamColor: '#0055A5', played: 5, won: 5, lost: 0, tied: 0, nr: 0, points: 10, nrr: +1.450, form: ['W', 'W', 'W', 'W', 'W'] },
+  { teamId: 'team-aus', teamName: 'Aussie Gladiators', teamColor: '#D4AF37', played: 5, won: 4, lost: 1, tied: 0, nr: 0, points: 8, nrr: +0.892, form: ['W', 'W', 'L', 'W', 'W'] },
+  { teamId: 'team-csk', teamName: 'Chennai Super Kings', teamColor: '#FACC15', played: 5, won: 3, lost: 2, tied: 0, nr: 0, points: 6, nrr: +0.340, form: ['L', 'W', 'W', 'L', 'W'] },
+  { teamId: 'team-mi', teamName: 'Mumbai Indians', teamColor: '#004BA0', played: 5, won: 2, lost: 3, tied: 0, nr: 0, points: 4, nrr: -0.125, form: ['W', 'L', 'L', 'W', 'L'] },
 ];
+
+export const LEADERBOARD_STATS: LeaderboardStats = {
+  orangeCap: { player: 'Virat Kohli', team: 'IND', runs: 296, innings: 5, highest: 76, sr: 138.31 },
+  purpleCap: { player: 'Jasprit Bumrah', team: 'IND', wickets: 15, innings: 5, econ: 4.17, best: '3/7' },
+  mostSixes: { player: 'Glenn Maxwell', team: 'AUS', count: 18 },
+  mostFours: { player: 'Travis Head', team: 'AUS', count: 32 },
+  bestEconomy: { player: 'Jasprit Bumrah', team: 'IND', econ: 4.17, overs: 19.3 },
+};

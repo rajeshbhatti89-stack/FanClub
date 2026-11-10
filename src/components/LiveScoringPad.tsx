@@ -5,9 +5,13 @@ import {
   ArrowLeftRight, 
   CircleDot, 
   Compass, 
-  AlertCircle
+  AlertCircle,
+  Zap,
+  Volume2,
+  Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { cricketSound } from '../utils/audioEffects';
 
 interface LiveScoringPadProps {
   match: Match;
@@ -21,7 +25,9 @@ interface LiveScoringPadProps {
     wicketType?: WicketType,
     newBatsmanId?: string,
     dismissedId?: string,
-    wagonDirection?: string
+    wagonDirection?: string,
+    isLofted?: boolean,
+    fielderName?: string
   ) => void;
   onUndoLastBall: () => void;
   onSwapStrike: () => void;
@@ -60,10 +66,16 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
   // States for Modals
   const [showWicketModal, setShowWicketModal] = useState(false);
   const [selectedWicketType, setSelectedWicketType] = useState<WicketType>('caught');
+  const [selectedFielder, setSelectedFielder] = useState('');
+  const [runOutBatsman, setRunOutBatsman] = useState<'striker' | 'nonStriker'>('striker');
   const [incomingBatsmanId, setIncomingBatsmanId] = useState('');
+
+  // Shot Selector & Lofted Toggle
   const [selectedWagonDirection, setSelectedWagonDirection] = useState('cover');
+  const [isLoftedShot, setIsLoftedShot] = useState(false);
+
   const [showBowlerSelectModal, setShowBowlerSelectModal] = useState(false);
-  const [selectedExtraModifier, setSelectedExtraModifier] = useState<ExtraType>('none');
+  const [showCustomExtrasModal, setShowCustomExtrasModal] = useState(false);
 
   // Available batsmen from batting team who haven't batted or been dismissed
   const battedPlayerIds = new Set(currentInning.batsmen.map(b => b.playerId));
@@ -71,31 +83,51 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
 
   // Handle standard run click
   const handleScoreRun = (runs: number) => {
-    if (runs === 4 || runs === 6) {
-      confetti({
-        particleCount: runs === 6 ? 60 : 35,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-    }
-
-    let extraRuns = 0;
-    if (selectedExtraModifier === 'wide' || selectedExtraModifier === 'no_ball') {
-      extraRuns = 1;
+    // Sound & Haptic FX
+    if (runs === 0) {
+      cricketSound.playDot();
+    } else if (runs === 4) {
+      cricketSound.playFour();
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+    } else if (runs === 6) {
+      cricketSound.playSix();
+      confetti({ particleCount: 75, spread: 80, origin: { y: 0.7 } });
+    } else {
+      cricketSound.playSingle();
     }
 
     onRecordBall(
       runs,
-      extraRuns,
-      selectedExtraModifier,
+      0,
+      'none',
       false,
       undefined,
       undefined,
       undefined,
-      selectedWagonDirection
+      selectedWagonDirection,
+      isLoftedShot
+    );
+  };
+
+  // Handle Specific Extras with combined runs
+  const handleScoreCustomExtra = (type: ExtraType, batRuns: number, bonusRuns: number) => {
+    if (type === 'no_ball' || type === 'wide') {
+      cricketSound.playSingle();
+    }
+
+    onRecordBall(
+      batRuns,
+      bonusRuns,
+      type,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      selectedWagonDirection,
+      isLoftedShot
     );
 
-    setSelectedExtraModifier('none');
+    setShowCustomExtrasModal(false);
   };
 
   // Handle Wicket Submission
@@ -105,6 +137,12 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
       return;
     }
 
+    cricketSound.playWicket();
+
+    const dismissedId = (selectedWicketType === 'run_out' && runOutBatsman === 'nonStriker')
+      ? nonStriker?.playerId
+      : striker?.playerId;
+
     onRecordBall(
       0,
       0,
@@ -112,12 +150,15 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
       true,
       selectedWicketType,
       incomingBatsmanId || undefined,
-      striker?.playerId,
-      selectedWagonDirection
+      dismissedId,
+      selectedWagonDirection,
+      isLoftedShot,
+      selectedFielder || undefined
     );
 
     setShowWicketModal(false);
     setIncomingBatsmanId('');
+    setSelectedFielder('');
   };
 
   // Recent balls in the active over
@@ -127,6 +168,19 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Free Hit Banner Alert */}
+      {currentInning.isFreeHitActive && (
+        <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-between animate-pulse">
+          <span className="flex items-center gap-2">
+            <Zap className="w-4 h-4 fill-slate-950" />
+            FREE HIT COMING UP! Batter cannot be dismissed bowled, caught, or LBW!
+          </span>
+          <span className="text-[10px] bg-slate-950 text-amber-300 px-2 py-0.5 rounded-full">
+            OFFICIAL RULE
+          </span>
+        </div>
+      )}
+
       {/* Active Batsmen & Bowler Status Bar */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Batsmen Box */}
@@ -286,20 +340,15 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900 text-sm tracking-wide">
-              BALL-BY-BALL SCORING PAD
+              BALL-BY-BALL SCORING CONSOLE
             </span>
-            {selectedExtraModifier !== 'none' && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300">
-                Modifier Active: +1 {selectedExtraModifier.replace('_', ' ')}
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Wagon Wheel Quick Direction */}
+            {/* Wagon Direction Selector */}
             <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
               <Compass className="w-3.5 h-3.5 text-blue-600" />
-              <span className="text-[11px] font-semibold text-slate-600">Direction:</span>
+              <span className="text-[11px] font-semibold text-slate-600">Shot:</span>
               <select
                 value={selectedWagonDirection}
                 onChange={(e) => setSelectedWagonDirection(e.target.value)}
@@ -310,6 +359,18 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* Lofted vs Ground Toggle */}
+            <button
+              onClick={() => setIsLoftedShot(!isLoftedShot)}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                isLoftedShot
+                  ? 'bg-purple-100 text-purple-900 border-purple-300'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              {isLoftedShot ? '☁️ In the Air (Lofted)' : '🌱 Ground Shot'}
+            </button>
 
             {/* Undo Last Ball */}
             <button
@@ -382,52 +443,36 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
 
         {/* Extras & Wicket Action Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          {/* Wide */}
+          {/* Quick Wide */}
           <button
-            onClick={() => setSelectedExtraModifier(selectedExtraModifier === 'wide' ? 'none' : 'wide')}
-            className={`py-3 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              selectedExtraModifier === 'wide'
-                ? 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-200 shadow-sm'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-            }`}
+            onClick={() => handleScoreCustomExtra('wide', 0, 1)}
+            className="py-3 px-3 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 cursor-pointer"
           >
             Wide (+1)
           </button>
 
-          {/* No Ball */}
+          {/* Quick No Ball */}
           <button
-            onClick={() => setSelectedExtraModifier(selectedExtraModifier === 'no_ball' ? 'none' : 'no_ball')}
-            className={`py-3 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              selectedExtraModifier === 'no_ball'
-                ? 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-200 shadow-sm'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-            }`}
+            onClick={() => handleScoreCustomExtra('no_ball', 0, 1)}
+            className="py-3 px-3 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 cursor-pointer"
           >
             No Ball (+1)
           </button>
 
-          {/* Bye */}
+          {/* More Extras Dialog (Wd+runs, Nb+runs, Leg Bye, Bye, Penalty) */}
           <button
-            onClick={() => setSelectedExtraModifier(selectedExtraModifier === 'bye' ? 'none' : 'bye')}
-            className={`py-3 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              selectedExtraModifier === 'bye'
-                ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-200'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-            }`}
+            onClick={() => setShowCustomExtrasModal(true)}
+            className="py-3 px-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 cursor-pointer"
           >
-            Bye (B)
+            More Extras...
           </button>
 
-          {/* Leg Bye */}
+          {/* Quick Bye 1 */}
           <button
-            onClick={() => setSelectedExtraModifier(selectedExtraModifier === 'leg_bye' ? 'none' : 'leg_bye')}
-            className={`py-3 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              selectedExtraModifier === 'leg_bye'
-                ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-200'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-            }`}
+            onClick={() => handleScoreCustomExtra('bye', 0, 1)}
+            className="py-3 px-3 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 cursor-pointer"
           >
-            Leg Bye (LB)
+            1 Bye / Leg Bye
           </button>
 
           {/* OUT / WICKET BUTTON */}
@@ -441,25 +486,110 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
         </div>
       </div>
 
-      {/* WICKET MODAL */}
-      {showWicketModal && (
+      {/* MORE EXTRAS MODAL (CricHeroes Full Matrix) */}
+      {showCustomExtrasModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scaleUp">
+            <h3 className="text-base font-extrabold text-slate-900 mb-1">CricHeroes Extras Keypad</h3>
+            <p className="text-xs text-slate-500 mb-4">Record wides with runs, no-balls with boundaries, byes, or penalty</p>
+
+            <div className="space-y-4 text-xs">
+              {/* Wides */}
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Wide Combinations:</span>
+                <div className="grid grid-cols-4 gap-2">
+                  <button onClick={() => handleScoreCustomExtra('wide', 0, 1)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Wd (1)</button>
+                  <button onClick={() => handleScoreCustomExtra('wide', 0, 2)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Wd + 1 (2)</button>
+                  <button onClick={() => handleScoreCustomExtra('wide', 0, 3)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Wd + 2 (3)</button>
+                  <button onClick={() => handleScoreCustomExtra('wide', 0, 5)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Wd + 4 (5)</button>
+                </div>
+              </div>
+
+              {/* No Balls */}
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">No Ball Combinations (Runs off bat):</span>
+                <div className="grid grid-cols-4 gap-2">
+                  <button onClick={() => handleScoreCustomExtra('no_ball', 0, 1)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Nb (1)</button>
+                  <button onClick={() => handleScoreCustomExtra('no_ball', 1, 1)} className="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold">Nb + 1 (2)</button>
+                  <button onClick={() => handleScoreCustomExtra('no_ball', 4, 1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold">Nb + 4 (5)</button>
+                  <button onClick={() => handleScoreCustomExtra('no_ball', 6, 1)} className="p-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300 font-bold">Nb + 6 (7)</button>
+                </div>
+              </div>
+
+              {/* Byes / Leg Byes */}
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Byes & Leg Byes:</span>
+                <div className="grid grid-cols-4 gap-2">
+                  <button onClick={() => handleScoreCustomExtra('bye', 0, 1)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold">1 Bye</button>
+                  <button onClick={() => handleScoreCustomExtra('bye', 0, 4)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold">4 Byes</button>
+                  <button onClick={() => handleScoreCustomExtra('leg_bye', 0, 1)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold">1 Leg Bye</button>
+                  <button onClick={() => handleScoreCustomExtra('leg_bye', 0, 4)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold">4 Leg Byes</button>
+                </div>
+              </div>
+
+              {/* Penalty */}
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Penalty:</span>
+                <button onClick={() => handleScoreCustomExtra('penalty', 0, 5)} className="w-full p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 font-bold text-center">
+                  +5 Penalty Runs to Batting Team
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowCustomExtrasModal(false)}
+              className="mt-5 w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* COMPREHENSIVE CRICHEROES WICKET MODAL */}
+      {showWicketModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 animate-scaleUp max-h-[92vh] overflow-y-auto">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-black">
                 W
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Record Wicket</h3>
-                <p className="text-xs text-slate-500">Dismissed: <strong className="text-slate-800">{striker?.name}</strong></p>
+                <h3 className="text-lg font-bold text-slate-900">Record Wicket Dismissal</h3>
+                <p className="text-xs text-slate-500">Official CricHeroes dismissal classification</p>
               </div>
             </div>
 
-            {/* Wicket Types */}
+            {/* Who is Out (for Run Out) */}
+            <div className="mb-3">
+              <label className="text-xs font-bold text-slate-600 block mb-1">Who is Dismissed?</label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setRunOutBatsman('striker')}
+                  className={`p-2.5 rounded-xl font-bold border transition-all ${
+                    runOutBatsman === 'striker' ? 'bg-rose-50 border-rose-500 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  Striker: {striker?.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRunOutBatsman('nonStriker')}
+                  className={`p-2.5 rounded-xl font-bold border transition-all ${
+                    runOutBatsman === 'nonStriker' ? 'bg-rose-50 border-rose-500 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  Non-Striker: {nonStriker?.name}
+                </button>
+              </div>
+            </div>
+
+            {/* Wicket Types (All official modes) */}
             <div className="mb-4">
-              <label className="text-xs font-bold text-slate-600 block mb-1.5">How was the batter out?</label>
+              <label className="text-xs font-bold text-slate-600 block mb-1.5">Dismissal Type</label>
               <div className="grid grid-cols-3 gap-2">
-                {(['caught', 'bowled', 'lbw', 'run_out', 'stumped', 'hit_wicket'] as WicketType[]).map((type) => (
+                {(['caught', 'bowled', 'lbw', 'run_out', 'stumped', 'caught_behind', 'caught_and_bowled', 'hit_wicket', 'retired_hurt'] as WicketType[]).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -470,11 +600,30 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
-                    {type.replace('_', ' ')}
+                    {type.replace(/_/g, ' ')}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Fielder assist if caught or run out */}
+            {(selectedWicketType === 'caught' || selectedWicketType === 'run_out') && (
+              <div className="mb-4">
+                <label className="text-xs font-bold text-slate-600 block mb-1">
+                  {selectedWicketType === 'caught' ? 'Caught by Fielder:' : 'Throw / Fielder Assist:'}
+                </label>
+                <select
+                  value={selectedFielder}
+                  onChange={(e) => setSelectedFielder(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white"
+                >
+                  <option value="">-- Select Fielder ({bowlingTeam.name}) --</option>
+                  {bowlingTeam.players.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Select Incoming Batsman */}
             <div className="mb-5">
@@ -524,26 +673,43 @@ export const LiveScoringPad: React.FC<LiveScoringPadProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-scaleUp">
             <h3 className="text-lg font-bold text-slate-900 mb-1">Select Next Bowler</h3>
-            <p className="text-xs text-slate-500 mb-4">Choose from {bowlingTeam.name} squad</p>
+            <p className="text-xs text-slate-500 mb-4">Choose from {bowlingTeam.name} squad (Max {match.maxOversPerBowler || 4} ov)</p>
 
             <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
-              {bowlingTeam.players.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    onChangeBowler(p.id);
-                    setShowBowlerSelectModal(false);
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-left text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
-                    p.id === currentInning.currentBowlerId
-                      ? 'bg-blue-50 border-blue-500 text-blue-900'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
-                  }`}
-                >
-                  <span>{p.name}</span>
-                  <span className="text-[11px] font-normal text-slate-500 capitalize">{p.role}</span>
-                </button>
-              ))}
+              {bowlingTeam.players.map((p) => {
+                const bStat = currentInning.bowlers.find(b => b.playerId === p.id);
+                const oversBowled = bStat ? bStat.overs : 0;
+                const maxOvers = match.maxOversPerBowler || 4;
+                const isLimitReached = oversBowled >= maxOvers;
+
+                return (
+                  <button
+                    key={p.id}
+                    disabled={isLimitReached}
+                    onClick={() => {
+                      onChangeBowler(p.id);
+                      setShowBowlerSelectModal(false);
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-left text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                      isLimitReached 
+                        ? 'opacity-40 bg-slate-100 cursor-not-allowed'
+                        : p.id === currentInning.currentBowlerId
+                        ? 'bg-blue-50 border-blue-500 text-blue-900'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
+                  >
+                    <div>
+                      <span>{p.name}</span>
+                      <span className="text-[10px] text-slate-400 block font-normal capitalize">
+                        {p.bowlingStyle || p.role}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-600">
+                      {oversBowled}/{maxOvers} ov {bStat ? `(${bStat.wickets}-${bStat.runsConceded})` : ''}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <button

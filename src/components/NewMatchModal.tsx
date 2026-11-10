@@ -49,14 +49,17 @@ export const NewMatchModal: React.FC<NewMatchModalProps> = ({
       players: DEFAULT_TEAMS[1].players.map(p => ({ ...p, id: `p-b-${p.id}` })),
     };
 
+    const totalOvers = Number(overs) || 20;
+
     const newMatch: Match = {
       id: `match-${Date.now()}`,
       title,
       venue,
       date: 'Today, Just Started',
-      overs: Number(overs) || 20,
+      overs: totalOvers,
+      maxOversPerBowler: Math.ceil(totalOvers / 5),
       ballType: 'leather_white',
-      matchType: 'T20',
+      matchType: totalOvers <= 20 ? 'T20' : 'ODI',
       teamA,
       teamB,
       tossWinnerId: tossWinner === 'A' ? teamA.id : teamB.id,
@@ -64,6 +67,15 @@ export const NewMatchModal: React.FC<NewMatchModalProps> = ({
       currentInningIndex: 0,
       selectedTheme: 'wcFinal',
       status: 'live',
+      info: {
+        matchNumber: 'Match 1',
+        series: title,
+        umpires: ['Official Umpire 1', 'Official Umpire 2'],
+        scorer: 'FanClub Scorer',
+        tossWinner: tossWinner === 'A' ? teamA.name : teamB.name,
+        tossDecision,
+        pitchCondition: 'Balanced Grass Turf'
+      },
       innings: [
         {
           teamId: teamA.id,
@@ -77,12 +89,27 @@ export const NewMatchModal: React.FC<NewMatchModalProps> = ({
           currentStrikerId: teamA.players[0].id,
           currentNonStrikerId: teamA.players[1].id,
           currentBowlerId: teamB.players[teamB.players.length - 1].id,
+          fallOfWickets: [],
+          partnerships: [],
           batsmen: [
             { playerId: teamA.players[0].id, name: teamA.players[0].name, runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0, isOut: false },
             { playerId: teamA.players[1].id, name: teamA.players[1].name, runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0, isOut: false },
           ],
           bowlers: [
-            { playerId: teamB.players[teamB.players.length - 1].id, name: teamB.players[teamB.players.length - 1].name, overs: 0, maidens: 0, runsConceded: 0, wickets: 0, economy: 0, wides: 0, noBalls: 0, dots: 0 }
+            { 
+              playerId: teamB.players[teamB.players.length - 1].id, 
+              name: teamB.players[teamB.players.length - 1].name, 
+              overs: 0, 
+              maidens: 0, 
+              runsConceded: 0, 
+              wickets: 0, 
+              economy: 0, 
+              wides: 0, 
+              noBalls: 0, 
+              dots: 0,
+              foursConceded: 0,
+              sixesConceded: 0
+            }
           ],
           balls: []
         },
@@ -98,6 +125,8 @@ export const NewMatchModal: React.FC<NewMatchModalProps> = ({
           currentStrikerId: teamB.players[0].id,
           currentNonStrikerId: teamB.players[1].id,
           currentBowlerId: teamA.players[teamA.players.length - 1].id,
+          fallOfWickets: [],
+          partnerships: [],
           batsmen: [],
           bowlers: [],
           balls: []

@@ -1,13 +1,6 @@
-// Core types for FanClub Cricket Scoring Web App
+// Comprehensive types for FanClub (CricHeroes Full Feature Replica)
 
 export type PlanType = 'free' | 'pro' | 'premium';
-
-export interface PlanFeature {
-  name: string;
-  free: boolean;
-  pro: boolean;
-  premium: boolean;
-}
 
 export type ThemeId = 'wcFinal' | 'asiaCup' | 'cricHeroes' | 'sunsetIPL' | 'teamCustom';
 
@@ -27,15 +20,30 @@ export interface ThemeConfig {
   isCustomTeam?: boolean;
 }
 
+export type PlayerRole = 'batsman' | 'bowler' | 'allrounder' | 'wicketkeeper';
+export type BattingStyle = 'RHB' | 'LHB';
+export type BowlingStyle = 'Right-arm Fast' | 'Right-arm Medium' | 'Right-arm Spin' | 'Left-arm Fast' | 'Left-arm Spin';
+
 export interface Player {
   id: string;
   name: string;
-  role: 'batsman' | 'bowler' | 'allrounder' | 'wicketkeeper';
+  role: PlayerRole;
+  battingStyle?: BattingStyle;
+  bowlingStyle?: BowlingStyle;
   avatar?: string;
-  matches?: number;
-  runs?: number;
-  wickets?: number;
-  highestScore?: number;
+  matches: number;
+  innings: number;
+  runs: number;
+  highestScore: number;
+  fifties: number;
+  hundreds: number;
+  strikeRate: number;
+  battingAverage: number;
+  wickets: number;
+  bowlingEconomy: number;
+  bestBowling: string;
+  catches?: number;
+  runOuts?: number;
 }
 
 export interface Team {
@@ -48,6 +56,12 @@ export interface Team {
   players: Player[];
 }
 
+export interface WagonShot {
+  direction: string;
+  runs: number;
+  isLofted?: boolean;
+}
+
 export interface BatsmanInning {
   playerId: string;
   name: string;
@@ -58,9 +72,10 @@ export interface BatsmanInning {
   strikeRate: number;
   isOut: boolean;
   dismissal?: string;
+  dismissalType?: WicketType;
   bowlerName?: string;
   catcherName?: string;
-  wagonShots?: Array<{ direction: string; runs: number }>;
+  wagonShots?: WagonShot[];
 }
 
 export interface BowlerInning {
@@ -74,16 +89,22 @@ export interface BowlerInning {
   wides: number;
   noBalls: number;
   dots: number;
+  foursConceded: number;
+  sixesConceded: number;
 }
 
 export type WicketType = 
   | 'bowled' 
   | 'caught' 
+  | 'caught_behind'
+  | 'caught_and_bowled'
   | 'lbw' 
   | 'run_out' 
   | 'stumped' 
   | 'hit_wicket' 
   | 'retired_hurt' 
+  | 'retired_out'
+  | 'obstructing_field'
   | 'timed_out';
 
 export type ExtraType = 'none' | 'wide' | 'no_ball' | 'bye' | 'leg_bye' | 'penalty';
@@ -105,9 +126,30 @@ export interface BallRecord {
   wicketType?: WicketType;
   dismissedPlayerId?: string;
   dismissedPlayerName?: string;
-  wagonDirection?: string; // 'fine_leg' | 'square_leg' | 'mid_wicket' | 'long_on' | 'straight' | 'long_off' | 'cover' | 'point' | 'third_man'
+  fielderName?: string;
+  wagonDirection?: string;
+  isLofted?: boolean;
+  isFreeHit?: boolean;
   commentary: string;
   timestamp: number;
+}
+
+export interface FallOfWicket {
+  wicketNumber: number;
+  score: number;
+  overs: string;
+  batsmanName: string;
+  batsmanId: string;
+}
+
+export interface Partnership {
+  wicketIndex: number;
+  batsman1Name: string;
+  batsman1Runs: number;
+  batsman2Name: string;
+  batsman2Runs: number;
+  totalRuns: number;
+  totalBalls: number;
 }
 
 export interface Inning {
@@ -116,8 +158,9 @@ export interface Inning {
   teamColor: string;
   totalRuns: number;
   wickets: number;
-  oversCompleted: number; // e.g., 4.3 represented as overs: 4, balls: 3
+  oversCompleted: number;
   ballsInCurrentOver: number;
+  isFreeHitActive?: boolean;
   extras: {
     wides: number;
     noBalls: number;
@@ -129,6 +172,8 @@ export interface Inning {
   batsmen: BatsmanInning[];
   bowlers: BowlerInning[];
   balls: BallRecord[];
+  fallOfWickets: FallOfWicket[];
+  partnerships: Partnership[];
   currentStrikerId: string;
   currentNonStrikerId: string;
   currentBowlerId: string;
@@ -136,14 +181,25 @@ export interface Inning {
 
 export type MatchStatus = 'upcoming' | 'live' | 'completed' | 'abandoned';
 
+export interface MatchInfo {
+  matchNumber: string;
+  series: string;
+  umpires: string[];
+  scorer: string;
+  tossWinner: string;
+  tossDecision: 'bat' | 'bowl';
+  pitchCondition: 'Batting Friendly' | 'Bowling Friendly' | 'Balanced Grass Turf';
+}
+
 export interface Match {
   id: string;
   title: string;
   venue: string;
   date: string;
   overs: number;
-  ballType: 'tennis' | 'leather' | 'leather_white' | 'leather_pink';
-  matchType: 'T20' | 'ODI' | 'Custom';
+  maxOversPerBowler: number;
+  ballType: 'tennis' | 'leather_white' | 'leather_red' | 'leather_pink';
+  matchType: 'T20' | 'ODI' | 'Box Cricket' | 'Custom';
   teamA: Team;
   teamB: Team;
   tossWinnerId: string;
@@ -156,6 +212,7 @@ export interface Match {
   manOfTheMatchPlayerId?: string;
   manOfTheMatchName?: string;
   selectedTheme: ThemeId;
+  info: MatchInfo;
 }
 
 export interface TournamentTeamStats {
@@ -166,6 +223,16 @@ export interface TournamentTeamStats {
   won: number;
   lost: number;
   tied: number;
+  nr: number;
   points: number;
   nrr: number; // Net Run Rate
+  form: Array<'W' | 'L' | 'T' | 'NR'>;
+}
+
+export interface LeaderboardStats {
+  orangeCap: { player: string; team: string; runs: number; innings: number; highest: number; sr: number };
+  purpleCap: { player: string; team: string; wickets: number; innings: number; econ: number; best: string };
+  mostSixes: { player: string; team: string; count: number };
+  mostFours: { player: string; team: string; count: number };
+  bestEconomy: { player: string; team: string; econ: number; overs: number };
 }

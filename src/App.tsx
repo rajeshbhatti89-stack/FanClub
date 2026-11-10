@@ -8,16 +8,20 @@ import type {
   BallRecord 
 } from './types/cricket';
 import { INITIAL_MATCH } from './data/mockData';
-import { Header } from './components/Header';
+import { Header, type ActiveTabType } from './components/Header';
 import { ScorecardBanner } from './components/ScorecardBanner';
 import { LiveScoringPad } from './components/LiveScoringPad';
 import { DetailedScorecard } from './components/DetailedScorecard';
+import { MatchAnalytics } from './components/MatchAnalytics';
 import { CommentaryFeed } from './components/CommentaryFeed';
 import { WagonWheel } from './components/WagonWheel';
 import { TournamentTable } from './components/TournamentTable';
+import { TeamsManager } from './components/TeamsManager';
+import { MatchInfo } from './components/MatchInfo';
 import { BroadcastOverlay } from './components/BroadcastOverlay';
 import { PlansModal } from './components/PlansModal';
 import { NewMatchModal } from './components/NewMatchModal';
+import { MatchPosterModal } from './components/MatchPosterModal';
 import { generateBallCommentary } from './utils/commentaryGenerator';
 import confetti from 'canvas-confetti';
 
@@ -34,14 +38,12 @@ export function App() {
     return (saved as ThemeId) || 'wcFinal';
   });
 
-  // Active View Tab
-  const [activeTab, setActiveTab] = useState<
-    'scoring' | 'scorecard' | 'commentary' | 'wagon' | 'tournament' | 'broadcast'
-  >('scoring');
+  // Active View Tab (All CricHeroes Core Tabs)
+  const [activeTab, setActiveTab] = useState<ActiveTabType>('scoring');
 
   // Match State
   const [match, setMatch] = useState<Match>(() => {
-    const saved = localStorage.getItem('fanclub_match_v2');
+    const saved = localStorage.getItem('fanclub_match_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -55,6 +57,7 @@ export function App() {
   // Modals
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isNewMatchModalOpen, setIsNewMatchModalOpen] = useState(false);
+  const [isPosterModalOpen, setIsPosterModalOpen] = useState(false);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -66,7 +69,7 @@ export function App() {
   }, [currentTheme]);
 
   useEffect(() => {
-    localStorage.setItem('fanclub_match_v2', JSON.stringify(match));
+    localStorage.setItem('fanclub_match_v3', JSON.stringify(match));
   }, [match]);
 
   // Handle Recording a Ball
@@ -77,8 +80,10 @@ export function App() {
     isWicket: boolean,
     wicketType?: WicketType,
     newBatsmanId?: string,
-    _dismissedId?: string,
-    wagonDirection?: string
+    dismissedId?: string,
+    wagonDirection?: string,
+    isLofted?: boolean,
+    fielderName?: string
   ) => {
     setMatch(prevMatch => {
       const matchCopy: Match = JSON.parse(JSON.stringify(prevMatch));
@@ -94,7 +99,15 @@ export function App() {
       // 1. Update Innings Total
       currentInning.totalRuns += totalRunsThisBall;
 
-      // 2. Update Extras Breakdown
+      // 2. Free Hit Logic
+      const wasFreeHit = !!currentInning.isFreeHitActive;
+      if (extraType === 'no_ball') {
+        currentInning.isFreeHitActive = true;
+      } else if (isLegal) {
+        currentInning.isFreeHitActive = false;
+      }
+
+      // 3. Update Extras Breakdown
       if (extraType === 'wide') {
         currentInning.extras.wides += extraRuns;
         currentInning.extras.total += extraRuns;
@@ -107,9 +120,12 @@ export function App() {
       } else if (extraType === 'leg_bye') {
         currentInning.extras.legByes += extraRuns;
         currentInning.extras.total += extraRuns;
+      } else if (extraType === 'penalty') {
+        currentInning.extras.penalties += extraRuns;
+        currentInning.extras.total += extraRuns;
       }
 
-      // 3. Update Striker Stats
+      // 4. Update Striker Stats
       if (striker) {
         if (extraType !== 'wide') {
           striker.balls += 1;
@@ -121,34 +137,56 @@ export function App() {
 
         if (wagonDirection && runsOffBat > 0) {
           if (!striker.wagonShots) striker.wagonShots = [];
-          striker.wagonShots.push({ direction: wagonDirection, runs: runsOffBat });
+          striker.wagonShots.push({ direction: wagonDirection, runs: runsOffBat, isLofted });
         }
       }
 
-      // 4. Update Bowler Stats
+      // 5. Update Bowler Stats
       if (bowler) {
-        if (extraType !== 'bye' && extraType !== 'leg_bye') {
+        if (extraType !== 'bye' && extraType !== 'leg_bye' && extraType !== 'penalty') {
           bowler.runsConceded += totalRunsThisBall;
         }
         if (extraType === 'wide') bowler.wides += 1;
         if (extraType === 'no_ball') bowler.noBalls += 1;
+        if (runsOffBat === 4) bowler.foursConceded = (bowler.foursConceded || 0) + 1;
+        if (runsOffBat === 6) bowler.sixesConceded = (bowler.sixesConceded || 0) + 1;
         if (runsOffBat === 0 && totalRunsThisBall === 0 && isLegal) {
           bowler.dots += 1;
         }
-        if (isWicket && wicketType !== 'run_out' && wicketType !== 'timed_out') {
+        if (isWicket && wicketType !== 'run_out' && wicketType !== 'timed_out' && wicketType !== 'retired_hurt') {
           bowler.wickets += 1;
         }
       }
 
-      // 5. Handle Wickets
+      // 6. Handle Wickets
       if (isWicket) {
         currentInning.wickets += 1;
-        if (striker) {
-          striker.isOut = true;
-          striker.dismissal = `${wicketType || 'out'} b ${bowler?.name || 'Bowler'}`;
+        const targetBatter = currentInning.batsmen.find(b => b.playerId === dismissedId) || striker;
+
+        if (targetBatter) {
+          targetBatter.isOut = true;
+          let dismissalStr = wicketType ? wicketType.replace(/_/g, ' ') : 'out';
+          if (fielderName && (wicketType === 'caught' || wicketType === 'run_out')) {
+            dismissalStr += ` (${fielderName})`;
+          }
+          if (wicketType !== 'run_out' && bowler) {
+            dismissalStr += ` b ${bowler.name}`;
+          }
+          targetBatter.dismissal = dismissalStr;
+          targetBatter.dismissalType = wicketType;
         }
 
-        // Insert new batsman if selected
+        // Add to Fall of Wickets (FOW)
+        if (!currentInning.fallOfWickets) currentInning.fallOfWickets = [];
+        currentInning.fallOfWickets.push({
+          wicketNumber: currentInning.wickets,
+          score: currentInning.totalRuns,
+          overs: `${currentInning.oversCompleted}.${currentInning.ballsInCurrentOver + (isLegal ? 1 : 0)}`,
+          batsmanName: targetBatter ? targetBatter.name : 'Batter',
+          batsmanId: targetBatter ? targetBatter.playerId : ''
+        });
+
+        // Insert new incoming batsman
         if (newBatsmanId) {
           const newPlayer = battingTeam.players.find(p => p.id === newBatsmanId);
           if (newPlayer) {
@@ -162,12 +200,16 @@ export function App() {
               strikeRate: 0,
               isOut: false,
             });
-            currentInning.currentStrikerId = newPlayer.id;
+            if (targetBatter?.playerId === currentInning.currentNonStrikerId) {
+              currentInning.currentNonStrikerId = newPlayer.id;
+            } else {
+              currentInning.currentStrikerId = newPlayer.id;
+            }
           }
         }
       }
 
-      // 6. Generate Realistic Ball Commentary
+      // 7. Generate Commentary
       const commentary = generateBallCommentary(
         bowler?.name || 'Bowler',
         striker?.name || 'Batsman',
@@ -178,7 +220,7 @@ export function App() {
         wagonDirection
       );
 
-      // 7. Add Ball to History
+      // 8. Add Ball to History
       const ballLog: BallRecord = {
         id: `ball-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         overIndex: currentInning.oversCompleted,
@@ -195,12 +237,15 @@ export function App() {
         isWicket,
         wicketType,
         wagonDirection,
+        isLofted,
+        isFreeHit: wasFreeHit,
+        fielderName,
         commentary,
         timestamp: Date.now()
       };
       currentInning.balls.push(ballLog);
 
-      // 8. Update Legal Ball / Over Counters & Strike Rotation
+      // 9. Legal Ball / Over Counters & Strike Rotation
       if (isLegal) {
         currentInning.ballsInCurrentOver += 1;
 
@@ -211,7 +256,7 @@ export function App() {
           currentInning.currentNonStrikerId = temp;
         }
 
-        // Check if Over Completed (6 legal balls)
+        // Check Over Finished (6 legal balls)
         if (currentInning.ballsInCurrentOver >= 6) {
           currentInning.oversCompleted += 1;
           currentInning.ballsInCurrentOver = 0;
@@ -228,7 +273,7 @@ export function App() {
         }
       }
 
-      // Check Win Condition or Innings Finish
+      // Check Win Condition in 2nd Innings
       if (matchCopy.currentInningIndex === 1) {
         const target = matchCopy.innings[0].totalRuns + 1;
         if (currentInning.totalRuns >= target) {
@@ -253,7 +298,6 @@ export function App() {
       const lastBall = currentInning.balls.pop();
       if (!lastBall) return prevMatch;
 
-      // Revert totals
       currentInning.totalRuns = Math.max(0, currentInning.totalRuns - (lastBall.runsOffBat + lastBall.extraRuns));
 
       if (lastBall.isLegalBall) {
@@ -267,9 +311,11 @@ export function App() {
 
       if (lastBall.isWicket) {
         currentInning.wickets = Math.max(0, currentInning.wickets - 1);
+        if (currentInning.fallOfWickets && currentInning.fallOfWickets.length > 0) {
+          currentInning.fallOfWickets.pop();
+        }
       }
 
-      // Revert striker stats
       const striker = currentInning.batsmen.find(b => b.playerId === lastBall.strikerId);
       if (striker) {
         if (lastBall.extraType !== 'wide') {
@@ -285,10 +331,9 @@ export function App() {
         }
       }
 
-      // Revert bowler stats
       const bowler = currentInning.bowlers.find(b => b.playerId === lastBall.bowlerId);
       if (bowler) {
-        if (lastBall.extraType !== 'bye' && lastBall.extraType !== 'leg_bye') {
+        if (lastBall.extraType !== 'bye' && lastBall.extraType !== 'leg_bye' && lastBall.extraType !== 'penalty') {
           bowler.runsConceded = Math.max(0, bowler.runsConceded - (lastBall.runsOffBat + lastBall.extraRuns));
         }
         if (lastBall.isWicket && lastBall.wicketType !== 'run_out') {
@@ -300,7 +345,6 @@ export function App() {
     });
   };
 
-  // Swap Strike
   const handleSwapStrike = () => {
     setMatch(prevMatch => {
       const matchCopy: Match = JSON.parse(JSON.stringify(prevMatch));
@@ -312,7 +356,6 @@ export function App() {
     });
   };
 
-  // Change Bowler
   const handleChangeBowler = (bowlerId: string) => {
     setMatch(prevMatch => {
       const matchCopy: Match = JSON.parse(JSON.stringify(prevMatch));
@@ -333,7 +376,9 @@ export function App() {
             economy: 0,
             wides: 0,
             noBalls: 0,
-            dots: 0
+            dots: 0,
+            foursConceded: 0,
+            sixesConceded: 0
           };
           currentInning.bowlers.push(bowler);
         }
@@ -343,12 +388,11 @@ export function App() {
     });
   };
 
-  // Reset Demo to World Cup Final Match
   const handleResetDemo = () => {
     if (confirm('Reset to standard World Cup Grand Final demo match?')) {
       setMatch(INITIAL_MATCH);
       setCurrentTheme('wcFinal');
-      localStorage.removeItem('fanclub_match_v2');
+      localStorage.removeItem('fanclub_match_v3');
     }
   };
 
@@ -364,6 +408,7 @@ export function App() {
         setActiveTab={setActiveTab}
         onNewMatch={() => setIsNewMatchModalOpen(true)}
         onResetDemo={handleResetDemo}
+        onOpenPoster={() => setIsPosterModalOpen(true)}
         teamAColor={match.teamA.color}
         teamBColor={match.teamB.color}
       />
@@ -399,8 +444,8 @@ export function App() {
           />
         )}
 
-        {activeTab === 'commentary' && (
-          <CommentaryFeed
+        {activeTab === 'analytics' && (
+          <MatchAnalytics
             match={match}
             currentPlan={currentPlan}
             currentTheme={currentTheme}
@@ -417,12 +462,29 @@ export function App() {
           />
         )}
 
+        {activeTab === 'commentary' && (
+          <CommentaryFeed
+            match={match}
+            currentPlan={currentPlan}
+            currentTheme={currentTheme}
+            onOpenPlans={() => setIsPlansModalOpen(true)}
+          />
+        )}
+
         {activeTab === 'tournament' && (
           <TournamentTable
             currentPlan={currentPlan}
             currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
+        )}
+
+        {activeTab === 'teams' && (
+          <TeamsManager />
+        )}
+
+        {activeTab === 'info' && (
+          <MatchInfo match={match} />
         )}
 
         {activeTab === 'broadcast' && (
@@ -439,11 +501,11 @@ export function App() {
       <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">FanClub Cricket Scoring</span>
+            <span className="font-bold text-slate-800">FanClub</span>
             <span>•</span>
-            <span>Based on CricHeroes</span>
+            <span>Full CricHeroes Suite Replica</span>
             <span>•</span>
-            <span className="text-emerald-600 font-semibold">Active: {currentTheme.toUpperCase()}</span>
+            <span className="text-emerald-600 font-semibold uppercase">Active Theme: {currentTheme}</span>
           </div>
           <div className="flex items-center gap-3">
             <span>Plans: Free / Pro ₹21 / Premium ₹51</span>
@@ -471,6 +533,15 @@ export function App() {
           setMatch(newMatch);
           setActiveTab('scoring');
         }}
+      />
+
+      {/* Match Poster / MVP Social Story Card Modal */}
+      <MatchPosterModal
+        isOpen={isPosterModalOpen}
+        onClose={() => setIsPosterModalOpen(false)}
+        match={match}
+        currentPlan={currentPlan}
+        onOpenPlans={() => setIsPlansModalOpen(true)}
       />
     </div>
   );
