@@ -2,27 +2,26 @@ import { useState, useEffect } from 'react';
 import type { 
   Match, 
   PlanType, 
-  ThemeId, 
+  ObsThemeId, 
   ExtraType, 
   WicketType, 
   BallRecord 
 } from './types/cricket';
-import { INITIAL_MATCH } from './data/mockData';
-import { Header, type ActiveTabType } from './components/Header';
-import { ScorecardBanner } from './components/ScorecardBanner';
-import { LiveScoringPad } from './components/LiveScoringPad';
-import { DetailedScorecard } from './components/DetailedScorecard';
-import { MatchAnalytics } from './components/MatchAnalytics';
-import { CommentaryFeed } from './components/CommentaryFeed';
+import { DEFAULT_INITIAL_MATCH, DEFAULT_TEAMS, makeBlankInning } from './data/initialState';
+import Header, { type ActiveTabType } from './components/Header';
+import ScorecardBanner from './components/ScorecardBanner';
+import LiveScoringPad from './components/LiveScoringPad';
+import DetailedScorecard from './components/DetailedScorecard';
+import MatchAnalytics from './components/MatchAnalytics';
 import { WagonWheel } from './components/WagonWheel';
-import { TournamentTable } from './components/TournamentTable';
-import { TeamsManager } from './components/TeamsManager';
+import { CommentaryFeed } from './components/CommentaryFeed';
+import TournamentManager from './components/TournamentManager';
+import TeamsManager from './components/TeamsManager';
 import { MatchInfo } from './components/MatchInfo';
-import { BroadcastOverlay } from './components/BroadcastOverlay';
+import BroadcastOverlay from './components/BroadcastOverlay';
 import { PlansModal } from './components/PlansModal';
-import { NewMatchModal } from './components/NewMatchModal';
-import { MatchPosterModal } from './components/MatchPosterModal';
-import { generateBallCommentary } from './utils/commentaryGenerator';
+import NewMatchModal from './components/NewMatchModal';
+import { generateBallCommentary } from './utils/commentary';
 import confetti from 'canvas-confetti';
 
 export function App() {
@@ -32,18 +31,18 @@ export function App() {
     return (saved as PlanType) || 'free';
   });
 
-  // Theme State (wcFinal | asiaCup | cricHeroes | sunsetIPL | teamCustom)
-  const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => {
-    const saved = localStorage.getItem('fanclub_theme');
-    return (saved as ThemeId) || 'wcFinal';
+  // OBS Live Broadcast Theme (wcFinal | asiaCup | sunsetIPL | teamCustom)
+  const [currentObsTheme, setCurrentObsTheme] = useState<ObsThemeId>(() => {
+    const saved = localStorage.getItem('fanclub_obs_theme');
+    return (saved as ObsThemeId) || 'wcFinal';
   });
 
-  // Active View Tab (All CricHeroes Core Tabs)
+  // Active View Tab
   const [activeTab, setActiveTab] = useState<ActiveTabType>('scoring');
 
   // Match State
   const [match, setMatch] = useState<Match>(() => {
-    const saved = localStorage.getItem('fanclub_match_v3');
+    const saved = localStorage.getItem('fanclub_active_match_v4');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -51,13 +50,12 @@ export function App() {
         console.error(e);
       }
     }
-    return INITIAL_MATCH;
+    return DEFAULT_INITIAL_MATCH;
   });
 
   // Modals
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isNewMatchModalOpen, setIsNewMatchModalOpen] = useState(false);
-  const [isPosterModalOpen, setIsPosterModalOpen] = useState(false);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -65,14 +63,35 @@ export function App() {
   }, [currentPlan]);
 
   useEffect(() => {
-    localStorage.setItem('fanclub_theme', currentTheme);
-  }, [currentTheme]);
+    localStorage.setItem('fanclub_obs_theme', currentObsTheme);
+  }, [currentObsTheme]);
 
   useEffect(() => {
-    localStorage.setItem('fanclub_match_v3', JSON.stringify(match));
+    localStorage.setItem('fanclub_active_match_v4', JSON.stringify(match));
   }, [match]);
 
-  // Handle Recording a Ball
+  // ============================================================
+  // STANDALONE OBS BROWSER SOURCE ROUTE (?mode=overlay or ?obs=true)
+  // When loaded in OBS Studio, renders strictly the TV overlay graphic
+  // with 0 app chrome on 100% transparent canvas.
+  // ============================================================
+  const urlParams = new URLSearchParams(window.location.search);
+  const isOverlayMode = urlParams.get('mode') === 'overlay' || urlParams.get('obs') === 'true';
+
+  if (isOverlayMode) {
+    return (
+      <BroadcastOverlay
+        match={match}
+        currentPlan={currentPlan}
+        onOpenPlans={() => {}}
+        standalone={true}
+      />
+    );
+  }
+
+  // ============================================================
+  // BALL RECORDING ENGINE
+  // ============================================================
   const handleRecordBall = (
     runsOffBat: number,
     extraRuns: number,
@@ -96,7 +115,7 @@ export function App() {
       const isLegal = extraType !== 'wide' && extraType !== 'no_ball';
       const totalRunsThisBall = runsOffBat + extraRuns;
 
-      // 1. Update Innings Total
+      // 1. Update Innings Total Runs
       currentInning.totalRuns += totalRunsThisBall;
 
       // 2. Free Hit Logic
@@ -133,11 +152,16 @@ export function App() {
         striker.runs += runsOffBat;
         if (runsOffBat === 4) striker.fours += 1;
         if (runsOffBat === 6) striker.sixes += 1;
-        striker.strikeRate = striker.balls > 0 ? (striker.runs / striker.balls) * 100 : 0;
+        striker.strikeRate = striker.balls > 0 ? parseFloat(((striker.runs / striker.balls) * 100).toFixed(1)) : 0;
 
         if (wagonDirection && runsOffBat > 0) {
           if (!striker.wagonShots) striker.wagonShots = [];
-          striker.wagonShots.push({ direction: wagonDirection, runs: runsOffBat, isLofted });
+          striker.wagonShots.push({ 
+            direction: wagonDirection, 
+            runs: runsOffBat, 
+            isLofted: !!isLofted,
+            timestamp: Date.now()
+          });
         }
       }
 
@@ -183,7 +207,8 @@ export function App() {
           score: currentInning.totalRuns,
           overs: `${currentInning.oversCompleted}.${currentInning.ballsInCurrentOver + (isLegal ? 1 : 0)}`,
           batsmanName: targetBatter ? targetBatter.name : 'Batter',
-          batsmanId: targetBatter ? targetBatter.playerId : ''
+          batsmanId: targetBatter ? targetBatter.playerId : '',
+          dismissal: targetBatter?.dismissal || 'Wicket'
         });
 
         // Insert new incoming batsman
@@ -199,6 +224,8 @@ export function App() {
               sixes: 0,
               strikeRate: 0,
               isOut: false,
+              wagonShots: [],
+              milestones: []
             });
             if (targetBatter?.playerId === currentInning.currentNonStrikerId) {
               currentInning.currentNonStrikerId = newPlayer.id;
@@ -209,7 +236,7 @@ export function App() {
         }
       }
 
-      // 7. Generate Commentary
+      // 7. Generate Ball Commentary
       const commentary = generateBallCommentary(
         bowler?.name || 'Bowler',
         striker?.name || 'Batsman',
@@ -220,7 +247,7 @@ export function App() {
         wagonDirection
       );
 
-      // 8. Add Ball to History
+      // 8. Add Ball to Balls History
       const ballLog: BallRecord = {
         id: `ball-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         overIndex: currentInning.oversCompleted,
@@ -243,6 +270,7 @@ export function App() {
         commentary,
         timestamp: Date.now()
       };
+      if (!currentInning.balls) currentInning.balls = [];
       currentInning.balls.push(ballLog);
 
       // 9. Legal Ball / Over Counters & Strike Rotation
@@ -263,7 +291,7 @@ export function App() {
 
           if (bowler) {
             bowler.overs += 1;
-            bowler.economy = bowler.overs > 0 ? bowler.runsConceded / bowler.overs : 0;
+            bowler.economy = bowler.overs > 0 ? parseFloat((bowler.runsConceded / bowler.overs).toFixed(2)) : 0;
           }
 
           // Strike switches at end of over
@@ -273,9 +301,9 @@ export function App() {
         }
       }
 
-      // Check Win Condition in 2nd Innings
+      // 10. Check Win Condition in 2nd Innings
       if (matchCopy.currentInningIndex === 1) {
-        const target = matchCopy.innings[0].totalRuns + 1;
+        const target = (matchCopy.innings[0].totalRuns || 0) + 1;
         if (currentInning.totalRuns >= target) {
           matchCopy.status = 'completed';
           matchCopy.winnerTeamId = battingTeam.id;
@@ -293,7 +321,7 @@ export function App() {
     setMatch(prevMatch => {
       const matchCopy: Match = JSON.parse(JSON.stringify(prevMatch));
       const currentInning = matchCopy.innings[matchCopy.currentInningIndex];
-      if (currentInning.balls.length === 0) return prevMatch;
+      if (!currentInning.balls || currentInning.balls.length === 0) return prevMatch;
 
       const lastBall = currentInning.balls.pop();
       if (!lastBall) return prevMatch;
@@ -324,7 +352,7 @@ export function App() {
         striker.runs = Math.max(0, striker.runs - lastBall.runsOffBat);
         if (lastBall.runsOffBat === 4) striker.fours = Math.max(0, striker.fours - 1);
         if (lastBall.runsOffBat === 6) striker.sixes = Math.max(0, striker.sixes - 1);
-        striker.strikeRate = striker.balls > 0 ? (striker.runs / striker.balls) * 100 : 0;
+        striker.strikeRate = striker.balls > 0 ? parseFloat(((striker.runs / striker.balls) * 100).toFixed(1)) : 0;
         if (lastBall.isWicket) {
           striker.isOut = false;
           delete striker.dismissal;
@@ -370,6 +398,7 @@ export function App() {
             playerId: player.id,
             name: player.name,
             overs: 0,
+            balls: 0,
             maidens: 0,
             runsConceded: 0,
             wickets: 0,
@@ -388,50 +417,62 @@ export function App() {
     });
   };
 
-  const handleResetDemo = () => {
-    if (confirm('Reset to standard World Cup Grand Final demo match?')) {
-      setMatch(INITIAL_MATCH);
-      setCurrentTheme('wcFinal');
-      localStorage.removeItem('fanclub_match_v3');
+  const handleInningsBreak = () => {
+    setMatch(prevMatch => {
+      const matchCopy: Match = JSON.parse(JSON.stringify(prevMatch));
+      if (matchCopy.currentInningIndex === 0) {
+        matchCopy.currentInningIndex = 1;
+        matchCopy.innings[1].targetScore = matchCopy.innings[0].totalRuns + 1;
+      }
+      return matchCopy;
+    });
+  };
+
+  const handleResetMatch = () => {
+    if (confirm('Reset to initial World Championship Grand Final match?')) {
+      setMatch(DEFAULT_INITIAL_MATCH);
+      setCurrentObsTheme('wcFinal');
+      localStorage.removeItem('fanclub_active_match_v4');
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-sans">
-      {/* Global App Header */}
+      {/* Global CricHeroes Style App Header */}
       <Header
-        currentTheme={currentTheme}
-        onSelectTheme={setCurrentTheme}
         currentPlan={currentPlan}
-        onOpenPlans={() => setIsPlansModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onOpenPlans={() => setIsPlansModalOpen(true)}
         onNewMatch={() => setIsNewMatchModalOpen(true)}
-        onResetDemo={handleResetDemo}
-        onOpenPoster={() => setIsPosterModalOpen(true)}
+        onResetMatch={handleResetMatch}
+        currentObsTheme={currentObsTheme}
+        onSelectObsTheme={setCurrentObsTheme}
+        matchTitle={match.title}
+        matchStatus={match.status}
         teamAColor={match.teamA.color}
         teamBColor={match.teamB.color}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
-        {/* Dynamic Match Scorecard Banner */}
+        {/* Dynamic Match Scorecard Banner with Match Performers Ribbon */}
         <ScorecardBanner
           match={match}
-          currentTheme={currentTheme}
+          currentObsTheme={currentObsTheme}
         />
 
-        {/* Tab View Routing */}
+        {/* Tab Routing */}
         {activeTab === 'scoring' && (
           <LiveScoringPad
             match={match}
-            currentTheme={currentTheme}
             currentPlan={currentPlan}
             onRecordBall={handleRecordBall}
             onUndoLastBall={handleUndoLastBall}
             onSwapStrike={handleSwapStrike}
             onChangeBowler={handleChangeBowler}
             onOpenPlans={() => setIsPlansModalOpen(true)}
+            onInningsBreak={handleInningsBreak}
           />
         )}
 
@@ -439,7 +480,6 @@ export function App() {
           <DetailedScorecard
             match={match}
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
         )}
@@ -448,7 +488,6 @@ export function App() {
           <MatchAnalytics
             match={match}
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
         )}
@@ -457,7 +496,6 @@ export function App() {
           <WagonWheel
             match={match}
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
         )}
@@ -466,15 +504,13 @@ export function App() {
           <CommentaryFeed
             match={match}
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
         )}
 
         {activeTab === 'tournament' && (
-          <TournamentTable
+          <TournamentManager
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
           />
         )}
@@ -491,21 +527,21 @@ export function App() {
           <BroadcastOverlay
             match={match}
             currentPlan={currentPlan}
-            currentTheme={currentTheme}
             onOpenPlans={() => setIsPlansModalOpen(true)}
+            standalone={false}
           />
         )}
       </main>
 
-      {/* Cloudflare Pages Footer */}
+      {/* Cloudflare Pages Deployment Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">FanClub</span>
+            <span className="font-extrabold text-slate-900">FanClub</span>
             <span>•</span>
-            <span>Full CricHeroes Suite Replica</span>
+            <span>CricHeroes Live Scoring & Broadcast Engine</span>
             <span>•</span>
-            <span className="text-emerald-600 font-semibold uppercase">Active Theme: {currentTheme}</span>
+            <span className="text-emerald-600 font-bold uppercase">OBS Theme: {currentObsTheme}</span>
           </div>
           <div className="flex items-center gap-3">
             <span>Plans: Free / Pro ₹21 / Premium ₹51</span>
@@ -533,15 +569,6 @@ export function App() {
           setMatch(newMatch);
           setActiveTab('scoring');
         }}
-      />
-
-      {/* Match Poster / MVP Social Story Card Modal */}
-      <MatchPosterModal
-        isOpen={isPosterModalOpen}
-        onClose={() => setIsPosterModalOpen(false)}
-        match={match}
-        currentPlan={currentPlan}
-        onOpenPlans={() => setIsPlansModalOpen(true)}
       />
     </div>
   );

@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import type { Match, PlanType, ThemeId } from '../types/cricket';
-import { Lock, Zap } from 'lucide-react';
+import type { Match, PlanType } from '../types/cricket';
+import { Target, Filter, Flame, Zap, Award } from 'lucide-react';
 
 interface WagonWheelProps {
   match: Match;
   currentPlan: PlanType;
-  currentTheme: ThemeId;
   onOpenPlans: () => void;
 }
 
-const DIRECTION_COORDS: Record<string, { x: number; y: number; label: string; isOffSide: boolean }> = {
-  third_man: { x: 90, y: 100, label: 'Third Man', isOffSide: true },
-  point: { x: 50, y: 200, label: 'Point', isOffSide: true },
-  cover: { x: 90, y: 300, label: 'Extra Cover', isOffSide: true },
-  long_off: { x: 150, y: 360, label: 'Long Off', isOffSide: true },
-  straight: { x: 200, y: 370, label: 'Straight', isOffSide: false },
-  long_on: { x: 250, y: 360, label: 'Long On', isOffSide: false },
-  mid_wicket: { x: 310, y: 300, label: 'Mid Wicket', isOffSide: false },
-  square_leg: { x: 350, y: 200, label: 'Square Leg', isOffSide: false },
-  fine_leg: { x: 310, y: 100, label: 'Fine Leg', isOffSide: false },
+const ZONE_ANGLES: Record<string, { label: string; angle: number }> = {
+  cover: { label: 'Cover', angle: 45 },
+  mid_off: { label: 'Mid-Off', angle: 75 },
+  straight: { label: 'Long-Off / Straight', angle: 90 },
+  mid_on: { label: 'Long-On / Mid-On', angle: 105 },
+  mid_wicket: { label: 'Mid-Wicket', angle: 135 },
+  square_leg: { label: 'Square Leg', angle: 165 },
+  fine_leg: { label: 'Fine Leg', angle: 215 },
+  third_man: { label: 'Third Man', angle: 315 },
+  point: { label: 'Point', angle: 345 },
 };
 
 export const WagonWheel: React.FC<WagonWheelProps> = ({
@@ -26,231 +25,248 @@ export const WagonWheel: React.FC<WagonWheelProps> = ({
   currentPlan,
   onOpenPlans,
 }) => {
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'boundaries' | 'sixes' | 'fours'>('all');
+  const [selectedInningIdx, setSelectedInningIdx] = useState<0 | 1>(match.currentInningIndex);
   const [selectedBatsmanId, setSelectedBatsmanId] = useState<string>('all');
+  const [shotFilter, setShotFilter] = useState<'all' | 'boundaries' | 'sixes' | 'dots'>('all');
 
-  const currentInning = match.innings[match.currentInningIndex];
-  const battingTeam = match.currentInningIndex === 0 ? match.teamA : match.teamB;
+  const selectedInning = match.innings[selectedInningIdx];
+  const battingTeam = selectedInningIdx === 0 ? match.teamA : match.teamB;
 
-  let filteredBalls = currentInning.balls.filter(b => b.runsOffBat > 0 && b.wagonDirection);
+  // Collect all balls with wagonDirection
+  const shotsWithDirection = (selectedInning.balls || []).filter(b => !!b.wagonDirection);
 
-  if (selectedBatsmanId !== 'all') {
-    filteredBalls = filteredBalls.filter(b => b.strikerId === selectedBatsmanId);
-  }
+  // Apply filters
+  const filteredShots = shotsWithDirection.filter(b => {
+    if (selectedBatsmanId !== 'all' && b.strikerId !== selectedBatsmanId) return false;
+    if (shotFilter === 'boundaries' && b.runsOffBat !== 4 && b.runsOffBat !== 6) return false;
+    if (shotFilter === 'sixes' && b.runsOffBat !== 6) return false;
+    if (shotFilter === 'dots' && b.runsOffBat !== 0) return false;
+    return true;
+  });
 
-  if (selectedFilter === 'sixes') {
-    filteredBalls = filteredBalls.filter(b => b.runsOffBat === 6);
-  } else if (selectedFilter === 'fours') {
-    filteredBalls = filteredBalls.filter(b => b.runsOffBat === 4);
-  } else if (selectedFilter === 'boundaries') {
-    filteredBalls = filteredBalls.filter(b => b.runsOffBat === 4 || b.runsOffBat === 6);
-  }
+  // Calculate zone summary
+  const zoneSummary: Record<string, { shots: number; runs: number }> = {};
+  Object.keys(ZONE_ANGLES).forEach(k => {
+    zoneSummary[k] = { shots: 0, runs: 0 };
+  });
 
-  let offSideRuns = 0;
-  let legSideRuns = 0;
-  filteredBalls.forEach(b => {
-    const dir = DIRECTION_COORDS[b.wagonDirection || 'straight'];
-    if (dir?.isOffSide) {
-      offSideRuns += b.runsOffBat;
-    } else {
-      legSideRuns += b.runsOffBat;
+  shotsWithDirection.forEach(b => {
+    const dir = b.wagonDirection || 'cover';
+    if (zoneSummary[dir]) {
+      zoneSummary[dir].shots += 1;
+      zoneSummary[dir].runs += b.runsOffBat;
     }
   });
 
-  const totalRunsFiltered = offSideRuns + legSideRuns;
-  const offSidePct = totalRunsFiltered > 0 ? Math.round((offSideRuns / totalRunsFiltered) * 100) : 50;
-  const legSidePct = 100 - offSidePct;
-
-  const isLocked = currentPlan === 'free';
+  // Center coordinate of SVG
+  const cx = 200;
+  const cy = 200;
+  const radius = 170;
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-200 relative overflow-hidden">
-      {/* Header and Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
+    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-200">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-extrabold text-slate-900 text-base">
-              Interactive 360° Wagon Wheel
+            <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+              <Target className="w-4 h-4 text-emerald-600" />
+              Interactive Wagon Wheel & Field Zones
             </h3>
-            {isLocked && (
-              <span className="flex items-center gap-1 text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-300">
-                <Lock className="w-3 h-3" /> Pro Feature (₹21)
-              </span>
-            )}
+            <span className="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+              {filteredShots.length} Shots Mapped
+            </span>
           </div>
-          <p className="text-xs text-slate-500">
-            Shot direction distribution on pitch for {battingTeam.name}
+          <p className="text-xs text-slate-500 mt-0.5">
+            Full 360° ground visualizer for scoring shots, lofted drives, and boundaries
           </p>
         </div>
 
-        {/* Filter controls */}
-        <div className="flex items-center gap-2">
-          {/* Batsman Selector */}
+        {/* Inning Switcher */}
+        <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold">
+          <button
+            onClick={() => setSelectedInningIdx(0)}
+            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+              selectedInningIdx === 0 ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            1st Inn ({match.teamA.shortName})
+          </button>
+          <button
+            onClick={() => setSelectedInningIdx(1)}
+            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+              selectedInningIdx === 1 ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            2nd Inn ({match.teamB.shortName})
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Batsman filter */}
           <select
             value={selectedBatsmanId}
             onChange={(e) => setSelectedBatsmanId(e.target.value)}
-            disabled={isLocked}
-            className="p-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white"
           >
-            <option value="all">All Batsmen</option>
-            {currentInning.batsmen.map(b => (
-              <option key={b.playerId} value={b.playerId}>{b.name}</option>
+            <option value="all">All Batsmen ({battingTeam.shortName})</option>
+            {selectedInning.batsmen.map(b => (
+              <option key={b.playerId} value={b.playerId}>
+                {b.name} ({b.runs}r, {b.balls}b)
+              </option>
             ))}
           </select>
 
-          {/* Shot Filter Pills */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
-            {(['all', 'boundaries', 'fours', 'sixes'] as const).map(f => (
+          {/* Shot filter buttons */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl text-xs font-bold">
+            {(['all', 'boundaries', 'sixes', 'dots'] as const).map(type => (
               <button
-                key={f}
-                onClick={() => setSelectedFilter(f)}
-                disabled={isLocked}
+                key={type}
+                onClick={() => setShotFilter(type)}
                 className={`px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer ${
-                  selectedFilter === f
-                    ? 'bg-white text-blue-700 shadow-xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
+                  shotFilter === type ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {f}
+                {type}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-3 text-[11px] font-bold">
+          <span className="flex items-center gap-1 text-slate-500">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block" /> Dot
+          </span>
+          <span className="flex items-center gap-1 text-emerald-600">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> 1-3 Runs
+          </span>
+          <span className="flex items-center gap-1 text-blue-600">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> 4 Runs
+          </span>
+          <span className="flex items-center gap-1 text-orange-600">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block" /> 6 Runs
+          </span>
+        </div>
       </div>
 
-      {/* Main Ground View & Stats */}
+      {/* Main Wheel + Zone Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        {/* SVG Cricket Ground Pitch */}
-        <div className="md:col-span-8 flex justify-center relative">
-          <div className="w-full max-w-[420px] aspect-square relative rounded-full p-2 bg-gradient-to-b from-emerald-500 to-green-700 shadow-inner border-4 border-emerald-600/40">
-            {/* 30 yard circle */}
-            <div className="absolute inset-10 rounded-full border border-dashed border-white/50 pointer-events-none" />
+        {/* SVG Cricket Ground */}
+        <div className="md:col-span-7 flex justify-center">
+          <div className="relative w-full max-w-[380px] aspect-square">
+            <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-md">
+              {/* Outer Boundary grass */}
+              <circle cx={cx} cy={cy} r={radius} fill="#15803d" stroke="#166534" strokeWidth="6" />
+              {/* 30-yard circle */}
+              <circle cx={cx} cy={cy} r={radius * 0.55} fill="#16a34a" stroke="#ffffff" strokeDasharray="4,4" strokeWidth="1.5" opacity="0.6" />
+              {/* Pitch rectangle */}
+              <rect x={cx - 10} y={cy - 28} width="20" height="56" rx="2" fill="#d97706" opacity="0.85" />
+              {/* Crease lines */}
+              <line x1={cx - 10} y1={cy - 20} x2={cx + 10} y2={cy - 20} stroke="#ffffff" strokeWidth="1.5" />
+              <line x1={cx - 10} y1={cy + 20} x2={cx + 10} y2={cy + 20} stroke="#ffffff" strokeWidth="1.5" />
 
-            {/* Pitch in center */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-20 bg-amber-100/90 rounded-sm shadow-md border border-amber-300 pointer-events-none z-10 flex flex-col justify-between py-1 items-center">
-              <div className="w-5 h-0.5 bg-slate-800" />
-              <div className="text-[7px] font-black text-amber-900 uppercase tracking-tighter">PITCH</div>
-              <div className="w-5 h-0.5 bg-slate-800" />
-            </div>
+              {/* Zone Rays & Labels */}
+              {Object.entries(ZONE_ANGLES).map(([key, zone]) => {
+                const rad = (zone.angle - 90) * (Math.PI / 180);
+                const x2 = cx + (radius - 18) * Math.cos(rad);
+                const y2 = cy + (radius - 18) * Math.sin(rad);
+                return (
+                  <g key={key}>
+                    <line x1={cx} y1={cy} x2={x2} y2={y2} stroke="#ffffff" strokeWidth="0.8" opacity="0.2" />
+                    <text
+                      x={x2}
+                      y={y2}
+                      fill="#ffffff"
+                      fontSize="9"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      opacity="0.85"
+                    >
+                      {zone.label.split('/')[0]}
+                    </text>
+                  </g>
+                );
+              })}
 
-            {/* SVG Lines for Shots */}
-            <svg viewBox="0 0 400 400" className="w-full h-full">
-              <circle cx="200" cy="200" r="185" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeOpacity="0.8" />
-              <circle cx="200" cy="200" r="130" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
+              {/* Shot Vectors */}
+              {filteredShots.map((shot, idx) => {
+                const dir = shot.wagonDirection || 'cover';
+                const angleDeg = ZONE_ANGLES[dir]?.angle || 45;
+                // Add slight jitter for realistic visual spread
+                const jitter = (idx % 7 - 3) * 3;
+                const rad = (angleDeg + jitter - 90) * (Math.PI / 180);
 
-              {filteredBalls.map((ball, i) => {
-                const targetCoord = DIRECTION_COORDS[ball.wagonDirection || 'straight'];
-                if (!targetCoord) return null;
+                const shotDist = shot.runsOffBat === 6 ? radius - 8 : shot.runsOffBat === 4 ? radius - 15 : radius * 0.5 + (shot.runsOffBat * 15);
+                const sx = cx + shotDist * Math.cos(rad);
+                const sy = cy + shotDist * Math.sin(rad);
 
-                const strokeColor = ball.runsOffBat === 6 
-                  ? '#C084FC'
-                  : ball.runsOffBat === 4 
-                  ? '#34D399'
-                  : '#60A5FA';
+                let strokeColor = '#94a3b8';
+                let strokeWidth = 1.5;
+                if (shot.runsOffBat === 6) {
+                  strokeColor = '#f97316';
+                  strokeWidth = 3;
+                } else if (shot.runsOffBat === 4) {
+                  strokeColor = '#3b82f6';
+                  strokeWidth = 2.5;
+                } else if (shot.runsOffBat > 0) {
+                  strokeColor = '#22c55e';
+                  strokeWidth = 2;
+                }
 
                 return (
-                  <g key={`${ball.id}-${i}`}>
+                  <g key={shot.id || idx}>
                     <line
-                      x1="200"
-                      y1="200"
-                      x2={targetCoord.x}
-                      y2={targetCoord.y}
+                      x1={cx}
+                      y1={cy}
+                      x2={sx}
+                      y2={sy}
                       stroke={strokeColor}
-                      strokeWidth={ball.runsOffBat >= 4 ? 3 : 1.5}
+                      strokeWidth={strokeWidth}
                       strokeLinecap="round"
+                      opacity="0.85"
                     />
-                    <circle
-                      cx={targetCoord.x}
-                      cy={targetCoord.y}
-                      r={ball.runsOffBat === 6 ? 6 : ball.runsOffBat === 4 ? 4.5 : 3}
-                      fill={strokeColor}
-                      stroke="#FFFFFF"
-                      strokeWidth="1.5"
-                    />
+                    <circle cx={sx} cy={sy} r={shot.runsOffBat === 6 ? 4 : 3} fill={strokeColor} stroke="#ffffff" strokeWidth="1" />
                   </g>
                 );
               })}
             </svg>
-
-            {/* Ground Labels */}
-            <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] font-black text-white/90 uppercase tracking-wider">
-              Straight / Sight Screen
-            </span>
-            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-black text-white/90 uppercase tracking-wider">
-              Keeper / Fine Leg
-            </span>
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-white/90 uppercase tracking-wider -rotate-90">
-              Off Side
-            </span>
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-white/90 uppercase tracking-wider rotate-90">
-              Leg Side
-            </span>
           </div>
-
-          {/* Locked Overlay for Free Plan */}
-          {isLocked && (
-            <div className="absolute inset-0 rounded-3xl bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center text-white">
-              <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center mb-3 shadow-lg">
-                <Zap className="w-6 h-6 fill-current" />
-              </div>
-              <h4 className="text-lg font-bold">Wagon Wheel Locked on Free Plan</h4>
-              <p className="text-xs text-slate-300 max-w-xs mt-1 mb-4">
-                Upgrade to FanClub Pro for just ₹21/month to analyze shot directions, off-side vs leg-side splits, and boundary trends.
-              </p>
-              <button
-                onClick={onOpenPlans}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-105 transition-all cursor-pointer"
-              >
-                Upgrade to Pro (₹21/Month)
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Breakdown Stats */}
-        <div className="md:col-span-4 space-y-4">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Zone Distribution
-            </h4>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-xs font-bold mb-1">
-                  <span className="text-slate-700">Off Side</span>
-                  <span className="text-blue-600">{offSidePct}% ({offSideRuns} runs)</span>
-                </div>
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${offSidePct}%` }} />
-                </div>
-              </div>
+        {/* Zone Breakdown Table */}
+        <div className="md:col-span-5 space-y-2">
+          <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+            Directional Scoring Breakdown
+          </h4>
+          <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+            {Object.entries(ZONE_ANGLES).map(([key, zone]) => {
+              const data = zoneSummary[key] || { shots: 0, runs: 0 };
+              const totalRunsInInning = selectedInning.totalRuns || 1;
+              const pct = Math.round((data.runs / totalRunsInInning) * 100);
 
-              <div>
-                <div className="flex justify-between text-xs font-bold mb-1">
-                  <span className="text-slate-700">Leg Side</span>
-                  <span className="text-emerald-600">{legSidePct}% ({legSideRuns} runs)</span>
+              return (
+                <div
+                  key={key}
+                  className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 flex items-center justify-between text-xs transition-colors"
+                >
+                  <div className="font-bold text-slate-800">{zone.label}</div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-500 font-medium">{data.shots} shots</span>
+                    <span className="font-black text-slate-900 w-12 text-right">
+                      {data.runs} runs
+                    </span>
+                    <span className="w-8 text-right font-mono text-[10px] text-emerald-600 font-bold">
+                      {pct}%
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${legSidePct}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Shot Legend */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 text-xs space-y-2">
-            <span className="font-bold text-slate-800 block mb-1">Color Legend</span>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-purple-500" />
-              <span className="text-slate-600">Sixes (MAXIMUM)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-slate-600">Fours (BOUNDARIES)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-500" />
-              <span className="text-slate-600">Singles, Doubles & Threes</span>
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>

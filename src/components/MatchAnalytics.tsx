@@ -1,393 +1,1036 @@
-import React, { useState } from 'react';
-import type { Match, PlanType, ThemeId } from '../types/cricket';
-import { Award, TrendingUp, BarChart2, Users, Crown, Zap, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Lock, Trophy, BarChart2, TrendingUp, Users, Activity, Crown, ChevronRight } from 'lucide-react';
+import type { Match, BallRecord, BatsmanInning, Partnership, Inning } from '../types/cricket';
+import type { PlanType } from '../types/cricket';
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface MatchAnalyticsProps {
   match: Match;
   currentPlan: PlanType;
-  currentTheme: ThemeId;
   onOpenPlans: () => void;
 }
 
-export const MatchAnalytics: React.FC<MatchAnalyticsProps> = ({
-  match,
-  currentPlan,
-  onOpenPlans,
-}) => {
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState<'mvp' | 'manhattan' | 'partnerships' | 'fow'>('mvp');
+// ─── Internal Types ───────────────────────────────────────────────────────────
 
-  // 1. Calculate CricHeroes MVP Points
-  const calculatePlayerMvp = () => {
-    const list: Array<{
-      name: string;
-      team: string;
-      role: string;
-      points: number;
-      runs: number;
-      wickets: number;
-      catches: number;
-      breakdown: string;
-    }> = [];
+interface MVPEntry {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  teamName: string;
+  teamColor: string;
+  performanceString: string;
+  points: number;
+}
 
-    // Helper for team players
-    const processTeam = (team: typeof match.teamA, inningIdx: 0 | 1, bowlingInningIdx: 0 | 1) => {
-      const batInning = match.innings[inningIdx];
-      const bowlInning = match.innings[bowlingInningIdx];
+interface OverData {
+  over: number;
+  inn1Runs: number;
+  inn2Runs: number;
+}
 
-      team.players.forEach(p => {
-        const bat = batInning.batsmen.find(b => b.playerId === p.id);
-        const bowl = bowlInning.bowlers.find(b => b.playerId === p.id);
+interface WormPoint {
+  ball: number;
+  inn1Cum: number;
+  inn2Cum: number;
+}
 
-        let pts = 0;
-        let runs = 0;
-        let wkts = 0;
-        const catches = p.catches || 0;
+interface TooltipState {
+  visible: boolean;
+  x: number;
+  y: number;
+  content: string;
+}
 
-        if (bat) {
-          runs = bat.runs;
-          pts += bat.runs * 1; // 1 pt per run
-          pts += bat.fours * 1; // +1 per four
-          pts += bat.sixes * 2; // +2 per six
-          if (bat.runs >= 50) pts += 20; // 50 bonus
-          if (bat.runs >= 100) pts += 40; // 100 bonus
-          if (bat.balls >= 10 && bat.strikeRate > 150) pts += 10;
-        }
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-        if (bowl) {
-          wkts = bowl.wickets;
-          pts += bowl.wickets * 25; // 25 pts per wicket
-          pts += bowl.maidens * 12; // 12 pts per maiden
-          pts += bowl.dots * 1; // 1 pt per dot ball
-          if (bowl.overs >= 2 && bowl.economy <= 6.0) pts += 15; // Economy bonus
-          if (bowl.wickets >= 3) pts += 25; // 3-fer bonus
-        }
+function computeMVP(match: Match): MVPEntry[] {
+  const entries: MVPEntry[] = [];
 
-        pts += catches * 8; // 8 pts per catch
+  match.innings.forEach((inning) => {
+    const teamName = inning.teamName;
+    const teamColor = inning.teamColor;
 
-        if (pts > 0) {
-          list.push({
-            name: p.name,
-            team: team.shortName,
-            role: p.role,
-            points: Math.round(pts),
-            runs,
-            wickets: wkts,
-            catches,
-            breakdown: `${runs > 0 ? `${runs} runs` : ''}${runs > 0 && wkts > 0 ? ' • ' : ''}${wkts > 0 ? `${wkts} wkts` : ''}`
-          });
-        }
-      });
-    };
+    // Batting impact
+    inning.batsmen.forEach((b) => {
+      if (b.didNotBat) return;
+      const sr = b.balls > 0 ? (b.runs / b.balls) * 100 : 0;
+      let pts = b.runs * 1.0 + b.fours * 0.5 + b.sixes * 1.0;
+      if (sr > 150) pts += 10;
+      else if (sr > 120) pts += 5;
+      if (b.runs >= 50) pts += 15;
+      if (b.runs >= 100) pts += 25;
 
-    processTeam(match.teamA, 0, 1);
-    processTeam(match.teamB, 1, 0);
+      const existing = entries.find((e) => e.playerId === b.playerId);
+      const perfStr = `${b.runs}(${b.balls}) ${b.fours}×4 ${b.sixes}×6`;
+      if (existing) {
+        existing.points += pts;
+        existing.performanceString += ` | Bat: ${perfStr}`;
+      } else {
+        entries.push({
+          rank: 0,
+          playerId: b.playerId,
+          playerName: b.name,
+          teamName,
+          teamColor,
+          performanceString: `Bat: ${perfStr}`,
+          points: Math.round(pts),
+        });
+      }
+    });
 
-    return list.sort((a, b) => b.points - a.points);
+    // Bowling impact (from opposing inning's bowlers perspective, stored in this inning)
+    inning.bowlers.forEach((bwl) => {
+      let pts = bwl.wickets * 20 + bwl.maidens * 5 + bwl.dots * 0.5;
+      const econ = bwl.economy;
+      if (econ < 6) pts += 15;
+      else if (econ < 8) pts += 8;
+      if (bwl.wickets >= 3) pts += 15;
+      if (bwl.wickets >= 5) pts += 25;
+
+      // Bowler's team is the OPPONENT of batting team
+      const bowlerTeam = match.innings[0].teamId === inning.teamId ? match.teamB : match.teamA;
+      const bowlerTeamColor = bowlerTeam.color;
+
+      const totalOvers = bwl.overs + bwl.balls / 10;
+      const perfStr = `${bwl.wickets}/${bwl.runsConceded} (${totalOvers.toFixed(1)})`;
+
+      const existing = entries.find((e) => e.playerId === bwl.playerId);
+      if (existing) {
+        existing.points += Math.round(pts);
+        existing.performanceString += ` | Bowl: ${perfStr}`;
+      } else {
+        entries.push({
+          rank: 0,
+          playerId: bwl.playerId,
+          playerName: bwl.name,
+          teamName: bowlerTeam.name,
+          teamColor: bowlerTeamColor,
+          performanceString: `Bowl: ${perfStr}`,
+          points: Math.round(pts),
+        });
+      }
+    });
+  });
+
+  entries.sort((a, b) => b.points - a.points);
+  entries.forEach((e, i) => { e.rank = i + 1; });
+  return entries;
+}
+
+function computeOverByOver(balls1: BallRecord[], balls2: BallRecord[], maxOvers: number): OverData[] {
+  const data: OverData[] = [];
+  for (let o = 0; o < maxOvers; o++) {
+    const inn1 = balls1.filter((b) => b.overIndex === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
+    const inn2 = balls2.filter((b) => b.overIndex === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
+    if (o < Math.max(
+      balls1.length > 0 ? (Math.max(...balls1.map(b => b.overIndex)) + 1) : 0,
+      balls2.length > 0 ? (Math.max(...balls2.map(b => b.overIndex)) + 1) : 0,
+      1
+    )) {
+      data.push({ over: o + 1, inn1Runs: inn1, inn2Runs: inn2 });
+    }
+  }
+  return data;
+}
+
+function computeWorm(balls1: BallRecord[], balls2: BallRecord[]): WormPoint[] {
+  const maxBalls = Math.max(balls1.length, balls2.length);
+  const points: WormPoint[] = [{ ball: 0, inn1Cum: 0, inn2Cum: 0 }];
+  let cum1 = 0, cum2 = 0;
+  for (let i = 0; i < maxBalls; i++) {
+    if (i < balls1.length) cum1 += (balls1[i].runsOffBat + balls1[i].extraRuns);
+    if (i < balls2.length) cum2 += (balls2[i].runsOffBat + balls2[i].extraRuns);
+    points.push({ ball: i + 1, inn1Cum: cum1, inn2Cum: cum2 });
+  }
+  return points;
+}
+
+function computeWinProbability(match: Match): { chasing: number; defending: number; label: string } {
+  if (match.innings.length < 2 || match.status === 'completed') {
+    if (match.winnerTeamId) {
+      const chaserWon = match.innings[1]?.teamId === match.winnerTeamId;
+      return { chasing: chaserWon ? 100 : 0, defending: chaserWon ? 0 : 100, label: 'Result' };
+    }
+    return { chasing: 50, defending: 50, label: 'No data' };
+  }
+
+  const inn2 = match.innings[1];
+  if (!inn2.targetScore || inn2.balls.length === 0) {
+    return { chasing: 50, defending: 50, label: 'Awaiting 2nd innings' };
+  }
+
+  const target = inn2.targetScore;
+  const runs = inn2.totalRuns;
+  const wickets = inn2.wickets;
+  const ballsBowled = inn2.balls.filter(b => b.isLegalBall).length;
+  const totalBalls = match.overs * 6;
+  const ballsRemaining = totalBalls - ballsBowled;
+  const runsNeeded = target - runs;
+  const wicketsInHand = 10 - wickets;
+
+  if (runsNeeded <= 0) return { chasing: 100, defending: 0, label: 'Chasing team won' };
+  if (ballsRemaining <= 0 || wicketsInHand <= 0) return { chasing: 0, defending: 100, label: 'Defending team won' };
+
+  const rrr = (runsNeeded / ballsRemaining) * 6;
+  const crr = ballsBowled > 0 ? (runs / ballsBowled) * 6 : 0;
+  const wicketFactor = (wicketsInHand / 10);
+  const rrFactor = crr > 0 ? Math.min(crr / rrr, 2) : 0.5;
+  const rawChasing = (rrFactor * wicketFactor * 60);
+  const chasingPct = Math.min(Math.max(Math.round(rawChasing), 5), 95);
+
+  return {
+    chasing: chasingPct,
+    defending: 100 - chasingPct,
+    label: `Need ${runsNeeded} off ${ballsRemaining} balls, ${wicketsInHand} wkts`,
+  };
+}
+
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+
+type TabKey = 'mvp' | 'manhattan' | 'worm' | 'partnerships' | 'winprob';
+
+const TAB_CONFIG: { key: TabKey; label: string; icon: React.ReactNode; plan: PlanType | 'free' }[] = [
+  { key: 'mvp', label: 'MVP', icon: <Trophy size={14} />, plan: 'free' },
+  { key: 'manhattan', label: 'Manhattan', icon: <BarChart2 size={14} />, plan: 'pro' },
+  { key: 'worm', label: 'Worm', icon: <TrendingUp size={14} />, plan: 'pro' },
+  { key: 'partnerships', label: 'Partnerships', icon: <Users size={14} />, plan: 'free' },
+  { key: 'winprob', label: 'Win %', icon: <Activity size={14} />, plan: 'premium' },
+];
+
+function isPlanSufficient(current: PlanType, required: PlanType | 'free'): boolean {
+  if (required === 'free') return true;
+  if (required === 'pro') return current === 'pro' || current === 'premium';
+  if (required === 'premium') return current === 'premium';
+  return false;
+}
+
+// ─── Locked Overlay ───────────────────────────────────────────────────────────
+
+function LockedOverlay({ requiredPlan, onOpenPlans }: { requiredPlan: PlanType; onOpenPlans: () => void }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl overflow-hidden">
+      <div className="absolute inset-0 backdrop-blur-sm bg-white/60 rounded-2xl" />
+      <div className="relative z-10 flex flex-col items-center gap-3 px-6 py-8 text-center">
+        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+          <Lock size={24} className="text-white" />
+        </div>
+        <p className="text-gray-900 font-bold text-lg">
+          {requiredPlan === 'premium' ? 'Premium' : 'Pro'} Feature
+        </p>
+        <p className="text-gray-500 text-sm max-w-xs">
+          Upgrade to{' '}
+          <span className="font-semibold capitalize text-orange-500">{requiredPlan}</span>{' '}
+          to unlock this chart.
+        </p>
+        <button
+          onClick={onOpenPlans}
+          className="mt-1 flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow hover:shadow-md transition-all hover:scale-105"
+        >
+          Upgrade Now <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MVP Points Index ─────────────────────────────────────────────────────────
+
+function MVPIndex({ entries }: { entries: MVPEntry[] }) {
+  const maxPoints = entries[0]?.points ?? 1;
+
+  const rankStyle = (rank: number) => {
+    if (rank === 1) return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow';
+    if (rank === 2) return 'bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow';
+    if (rank === 3) return 'bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow';
+    return 'bg-gray-100 text-gray-500';
   };
 
-  const mvpRankings = calculatePlayerMvp();
-
-  // Mock Manhattan Overs data for Innings 1 and 2
-  const maxOvers = match.overs;
-  const mockOverRuns1 = [8, 15, 6, 9, 14, 11, 7, 8, 12, 10, 9, 13, 11, 15, 8, 9, 14, 12, 11, 14];
-  const mockOverRuns2 = [4, 18, 11, 8, 12, 15, 9, 6, 14, 8, 10, 11, 13, 9, 8, 12, 10, 7, 15];
-
-  const isLocked = currentPlan === 'free';
+  if (entries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+        <Trophy size={40} className="opacity-30" />
+        <p className="text-sm">No data yet. Start scoring to see MVP rankings.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-200">
-      {/* Top Header & Sub-tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
-              CricHeroes Match Analytics & Deep Insights
-            </h3>
-            {isLocked && (
-              <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
-                <Crown className="w-3 h-3 text-amber-600" /> Pro / VIP Feature
-              </span>
-            )}
+    <div className="space-y-2">
+      {entries.map((e) => (
+        <div
+          key={e.playerId}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-gray-50 transition-colors"
+        >
+          {/* Rank Badge */}
+          <div
+            className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${rankStyle(e.rank)}`}
+          >
+            {e.rank === 1 ? <Crown size={14} /> : e.rank}
           </div>
-          <p className="text-xs text-slate-500">
-            Player MVP Rankings, Manhattan Charts, Worm Line, and Partnership breakdowns
-          </p>
-        </div>
 
-        {/* Tab Pills */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
-          <button
-            onClick={() => setActiveAnalysisTab('mvp')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-              activeAnalysisTab === 'mvp' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5 text-amber-500" />
-            <span>MVP Rankings</span>
-          </button>
-          <button
-            onClick={() => setActiveAnalysisTab('manhattan')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-              activeAnalysisTab === 'manhattan' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <BarChart2 className="w-3.5 h-3.5 text-blue-500" />
-            <span>Manhattan & Worm</span>
-          </button>
-          <button
-            onClick={() => setActiveAnalysisTab('partnerships')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-              activeAnalysisTab === 'partnerships' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Partnerships</span>
-          </button>
+          {/* Player Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900 text-sm truncate">{e.playerName}</span>
+              <span
+                className="text-xs font-medium px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
+                style={{ backgroundColor: e.teamColor }}
+              >
+                {e.teamName.substring(0, 3).toUpperCase()}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 truncate mt-0.5">{e.performanceString}</p>
+            {/* Points Bar */}
+            <div className="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${(e.points / maxPoints) * 100}%`,
+                  backgroundColor:
+                    e.rank === 1 ? '#f59e0b' : e.rank === 2 ? '#94a3b8' : e.rank === 3 ? '#b45309' : '#6366f1',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Points */}
+          <div className="flex-shrink-0 text-right">
+            <span
+              className="text-base font-bold"
+              style={{
+                color: e.rank === 1 ? '#d97706' : e.rank === 2 ? '#64748b' : e.rank === 3 ? '#92400e' : '#4f46e5',
+              }}
+            >
+              {e.points}
+            </span>
+            <p className="text-xs text-gray-400">pts</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Manhattan Chart ──────────────────────────────────────────────────────────
+
+function ManhattanChart({
+  overData,
+  color1,
+  color2,
+  team1Name,
+  team2Name,
+}: {
+  overData: OverData[];
+  color1: string;
+  color2: string;
+  team1Name: string;
+  team2Name: string;
+}) {
+  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, x: 0, y: 0, content: '' });
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const W = 560, H = 220;
+  const PAD = { top: 16, right: 16, bottom: 32, left: 36 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const maxRuns = Math.max(...overData.flatMap((d) => [d.inn1Runs, d.inn2Runs]), 1);
+  const yMax = Math.ceil(maxRuns / 5) * 5 + 5;
+
+  const barGroupW = overData.length > 0 ? chartW / overData.length : 0;
+  const barW = barGroupW * 0.35;
+  const gap = barGroupW * 0.05;
+
+  const yScale = (runs: number) => chartH - (runs / yMax) * chartH;
+
+  const yTicks = [0, Math.round(yMax / 4), Math.round(yMax / 2), Math.round((yMax * 3) / 4), yMax];
+
+  if (overData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+        <BarChart2 size={40} className="opacity-30" />
+        <p className="text-sm">No ball data available yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* Legend */}
+      <div className="flex gap-4 mb-3 px-1">
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color1 }} />
+          {team1Name}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color2 }} />
+          {team2Name}
         </div>
       </div>
 
-      {/* TAB 1: MVP POINTS RANKINGS */}
-      {activeAnalysisTab === 'mvp' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Top Match Impact Players (CricHeroes MVP Index)
-            </span>
-            <span className="text-[11px] text-slate-500 font-mono">
-              Formula: Runs, 4s/6s bonus, Wickets (25pts), Maidens, Economy
-            </span>
-          </div>
+      {/* SVG */}
+      <div className="bg-gray-50 rounded-2xl p-2 overflow-x-auto">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full"
+          style={{ minWidth: Math.max(overData.length * 24, 300) }}
+          onMouseLeave={() => setTooltip((t) => ({ ...t, visible: false }))}
+        >
+          {/* Y-axis grid lines */}
+          {yTicks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={PAD.left}
+                x2={W - PAD.right}
+                y1={PAD.top + yScale(tick)}
+                y2={PAD.top + yScale(tick)}
+                stroke="#e5e7eb"
+                strokeWidth={1}
+              />
+              <text
+                x={PAD.left - 4}
+                y={PAD.top + yScale(tick)}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize={9}
+                fill="#9ca3af"
+              >
+                {tick}
+              </text>
+            </g>
+          ))}
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            {/* MVP #1 Highlight Hero Card */}
-            {mvpRankings.length > 0 && (
-              <div className="md:col-span-4 rounded-3xl p-5 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 text-slate-950 shadow-lg relative overflow-hidden flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-950 text-amber-300">
-                      ★ MATCH MVP #1
-                    </span>
-                    <span className="font-mono text-xs font-black">{mvpRankings[0].team}</span>
-                  </div>
-                  <h4 className="text-xl font-black text-slate-950 leading-tight">
-                    {mvpRankings[0].name}
-                  </h4>
-                  <p className="text-xs font-bold text-slate-900/80 capitalize mt-0.5">
-                    {mvpRankings[0].role}
-                  </p>
-                  <div className="mt-3 p-2.5 rounded-xl bg-slate-950/10 backdrop-blur-xs text-xs font-bold">
-                    {mvpRankings[0].breakdown || 'Match Winning Contribution'}
-                  </div>
-                </div>
+          {/* Bars */}
+          {overData.map((d, i) => {
+            const groupX = PAD.left + i * barGroupW + barGroupW * 0.1;
+            const y1 = PAD.top + yScale(d.inn1Runs);
+            const h1 = chartH - yScale(d.inn1Runs);
+            const y2 = PAD.top + yScale(d.inn2Runs);
+            const h2 = chartH - yScale(d.inn2Runs);
+            return (
+              <g key={d.over}>
+                {/* Inn1 bar */}
+                {h1 > 0 && (
+                  <rect
+                    x={groupX}
+                    y={y1}
+                    width={barW}
+                    height={h1}
+                    fill={color1}
+                    rx={2}
+                    opacity={0.85}
+                    className="cursor-pointer hover:opacity-100"
+                    onMouseEnter={(ev) => {
+                      const svg = svgRef.current;
+                      if (!svg) return;
+                      const rect = svg.getBoundingClientRect();
+                      const scale = rect.width / W;
+                      setTooltip({
+                        visible: true,
+                        x: (groupX + barW / 2) * scale,
+                        y: y1 * scale,
+                        content: `Over ${d.over} · ${team1Name}: ${d.inn1Runs} runs`,
+                      });
+                    }}
+                  />
+                )}
+                {/* Inn2 bar */}
+                {h2 > 0 && (
+                  <rect
+                    x={groupX + barW + gap}
+                    y={y2}
+                    width={barW}
+                    height={h2}
+                    fill={color2}
+                    rx={2}
+                    opacity={0.85}
+                    className="cursor-pointer hover:opacity-100"
+                    onMouseEnter={(ev) => {
+                      const svg = svgRef.current;
+                      if (!svg) return;
+                      const rect = svg.getBoundingClientRect();
+                      const scale = rect.width / W;
+                      setTooltip({
+                        visible: true,
+                        x: (groupX + barW + gap + barW / 2) * scale,
+                        y: y2 * scale,
+                        content: `Over ${d.over} · ${team2Name}: ${d.inn2Runs} runs`,
+                      });
+                    }}
+                  />
+                )}
+                {/* X label */}
+                <text
+                  x={groupX + barW + gap / 2}
+                  y={PAD.top + chartH + 14}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fill="#9ca3af"
+                >
+                  {d.over}
+                </text>
+              </g>
+            );
+          })}
 
-                <div className="mt-5 pt-3 border-t border-slate-950/20 flex items-baseline justify-between">
-                  <span className="text-xs font-bold text-slate-800 uppercase">MVP Score:</span>
-                  <span className="text-3xl font-black text-slate-950">{mvpRankings[0].points} pts</span>
-                </div>
-              </div>
-            )}
+          {/* Axes */}
+          <line
+            x1={PAD.left}
+            x2={PAD.left}
+            y1={PAD.top}
+            y2={PAD.top + chartH}
+            stroke="#d1d5db"
+            strokeWidth={1}
+          />
+          <line
+            x1={PAD.left}
+            x2={W - PAD.right}
+            y1={PAD.top + chartH}
+            y2={PAD.top + chartH}
+            stroke="#d1d5db"
+            strokeWidth={1}
+          />
+        </svg>
+      </div>
 
-            {/* Top 5 Leaderboard List */}
-            <div className="md:col-span-8 rounded-2xl border border-slate-200 overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
-                    <th className="py-2.5 px-4">Rank</th>
-                    <th className="py-2.5 px-4">Player</th>
-                    <th className="py-2.5 px-3">Team</th>
-                    <th className="py-2.5 px-4">Match Stats</th>
-                    <th className="py-2.5 px-4 text-right font-black">MVP Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {mvpRankings.slice(0, 7).map((p, idx) => (
-                    <tr key={p.name} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 font-bold text-slate-500">
-                        <span className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-black ${
-                          idx === 0 ? 'bg-amber-400 text-slate-950' : idx === 1 ? 'bg-slate-300 text-slate-900' : 'text-slate-600'
-                        }`}>
-                          {idx + 1}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        {p.name}
-                        <span className="text-[10px] text-slate-400 block font-normal capitalize">{p.role}</span>
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-slate-600">{p.team}</td>
-                      <td className="py-3 px-4 text-slate-700 font-medium">{p.breakdown || '-'}</td>
-                      <td className="py-3 px-4 text-right font-black text-blue-700 text-sm">
-                        {p.points} <span className="text-[10px] font-normal text-slate-500">pts</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: MANHATTAN & WORM CHART */}
-      {activeAnalysisTab === 'manhattan' && (
-        <div className="space-y-6">
-          {/* Manhattan Bar Chart */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                Manhattan Graph (Runs per Over Comparison)
-              </span>
-              <div className="flex items-center gap-4 text-xs font-bold">
-                <span className="flex items-center gap-1.5 text-blue-700">
-                  <span className="w-3 h-3 rounded-sm bg-blue-600 inline-block" />
-                  {match.teamA.shortName} (1st Inn)
-                </span>
-                <span className="flex items-center gap-1.5 text-amber-700">
-                  <span className="w-3 h-3 rounded-sm bg-amber-500 inline-block" />
-                  {match.teamB.shortName} (2nd Inn)
-                </span>
-              </div>
-            </div>
-
-            {/* SVG Manhattan Bars */}
-            <div className="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 overflow-x-auto">
-              <div className="min-w-[600px] h-48 flex items-end justify-between gap-2 pt-6 pb-2 border-b border-slate-300">
-                {Array.from({ length: Math.min(20, maxOvers) }).map((_, i) => {
-                  const runs1 = mockOverRuns1[i] || 0;
-                  const runs2 = mockOverRuns2[i] || 0;
-                  const height1 = (runs1 / 25) * 100;
-                  const height2 = (runs2 / 25) * 100;
-
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      {/* Tooltip */}
-                      <div className="absolute -top-10 opacity-0 group-hover:opacity-100 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-md pointer-events-none transition-all z-20 whitespace-nowrap">
-                        Over {i + 1}: {match.teamA.shortName} {runs1}r | {match.teamB.shortName} {runs2}r
-                      </div>
-
-                      {/* Bars */}
-                      <div className="w-full flex items-end justify-center gap-1 h-36">
-                        <div 
-                          className="w-1/2 bg-blue-600 rounded-t-sm transition-all hover:brightness-110"
-                          style={{ height: `${height1}%` }}
-                          title={`${match.teamA.shortName} Over ${i + 1}: ${runs1} runs`}
-                        />
-                        <div 
-                          className="w-1/2 bg-amber-500 rounded-t-sm transition-all hover:brightness-110"
-                          style={{ height: `${height2}%` }}
-                          title={`${match.teamB.shortName} Over ${i + 1}: ${runs2} runs`}
-                        />
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 font-mono">
-                        {i + 1}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between items-center text-[11px] text-slate-500 mt-2">
-                <span>Overs Timeline (1 to {maxOvers})</span>
-                <span>Peak Over: 18 Runs</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Worm Line Graph */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                Cumulative Worm Chart
-              </span>
-              <span className="text-[11px] text-slate-500">
-                Score comparison line across full 20 overs
-              </span>
-            </div>
-
-            <div className="w-full bg-slate-900 p-4 rounded-2xl border border-slate-800 text-white">
-              <svg viewBox="0 0 600 160" className="w-full h-40">
-                {/* Horizontal Guide Lines */}
-                <line x1="40" y1="130" x2="580" y2="130" stroke="#334155" strokeWidth="1" />
-                <line x1="40" y1="90" x2="580" y2="90" stroke="#334155" strokeWidth="1" strokeDasharray="2 2" />
-                <line x1="40" y1="50" x2="580" y2="50" stroke="#334155" strokeWidth="1" strokeDasharray="2 2" />
-                <line x1="40" y1="10" x2="580" y2="10" stroke="#334155" strokeWidth="1" strokeDasharray="2 2" />
-
-                <text x="10" y="133" fill="#64748B" fontSize="9">0</text>
-                <text x="10" y="93" fill="#64748B" fontSize="9">60</text>
-                <text x="10" y="53" fill="#64748B" fontSize="9">120</text>
-                <text x="10" y="13" fill="#64748B" fontSize="9">180</text>
-
-                {/* Team 1 Polyline (Blue) */}
-                <polyline
-                  fill="none"
-                  stroke="#3B82F6"
-                  strokeWidth="3"
-                  points="40,130 67,125 94,115 121,110 148,102 175,90 202,82 229,78 256,71 283,61 310,54 337,47 364,37 391,28 418,22 445,18 472,13 499,9 526,6 553,3"
-                />
-
-                {/* Team 2 Polyline (Amber) */}
-                <polyline
-                  fill="none"
-                  stroke="#F59E0B"
-                  strokeWidth="3"
-                  points="40,130 67,126 94,112 121,104 148,97 175,87 202,75 229,69 256,64 283,52 310,46 337,39 364,30 391,22 418,17 445,14 472,10 499,8 526,7"
-                />
-
-                {/* Legend in corner */}
-                <circle cx="450" cy="145" r="4" fill="#3B82F6" />
-                <text x="460" y="148" fill="#93C5FD" fontSize="10">{match.teamA.shortName} (176/7)</text>
-                <circle cx="530" cy="145" r="4" fill="#F59E0B" />
-                <text x="540" y="148" fill="#FDE68A" fontSize="10">{match.teamB.shortName} (161/8)</text>
-              </svg>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: PARTNERSHIPS */}
-      {activeAnalysisTab === 'partnerships' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-              Key Batting Partnerships ({match.teamA.name} 1st Innings)
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {match.innings[0].partnerships.map((p, idx) => {
-              const p1Pct = p.totalRuns > 0 ? (p.batsman1Runs / p.totalRuns) * 100 : 50;
-              const p2Pct = 100 - p1Pct;
-
-              return (
-                <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-                  <div className="flex items-center justify-between text-xs font-bold mb-2">
-                    <span className="text-slate-800">
-                      {idx + 1}st Wicket Partnership: <strong className="text-blue-700 text-sm">{p.totalRuns} Runs</strong> ({p.totalBalls} balls)
-                    </span>
-                    <span className="text-slate-500 font-normal">
-                      RR: {((p.totalRuns / p.totalBalls) * 6).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Dual color stacked bar */}
-                  <div className="w-full h-3 rounded-full overflow-hidden flex bg-slate-200 mb-2">
-                    <div className="bg-blue-600 h-full" style={{ width: `${p1Pct}%` }} />
-                    <div className="bg-indigo-400 h-full" style={{ width: `${p2Pct}%` }} />
-                  </div>
-
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-semibold text-blue-900">
-                      {p.batsman1Name}: <strong>{p.batsman1Runs} r</strong> ({Math.round(p1Pct)}%)
-                    </span>
-                    <span className="font-semibold text-indigo-900">
-                      {p.batsman2Name}: <strong>{p.batsman2Runs} r</strong> ({Math.round(p2Pct)}%)
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Tooltip */}
+      {tooltip.visible && (
+        <div
+          className="absolute z-20 bg-gray-900 text-white text-xs rounded-lg px-3 py-1.5 pointer-events-none shadow-lg"
+          style={{ left: tooltip.x, top: tooltip.y - 36, transform: 'translateX(-50%)' }}
+        >
+          {tooltip.content}
         </div>
       )}
     </div>
   );
-};
+}
+
+// ─── Worm Chart ───────────────────────────────────────────────────────────────
+
+function WormChart({
+  wormData,
+  color1,
+  color2,
+  team1Name,
+  team2Name,
+}: {
+  wormData: WormPoint[];
+  color1: string;
+  color2: string;
+  team1Name: string;
+  team2Name: string;
+}) {
+  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, x: 0, y: 0, content: '' });
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const W = 560, H = 220;
+  const PAD = { top: 16, right: 16, bottom: 32, left: 42 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const maxBall = wormData[wormData.length - 1]?.ball ?? 1;
+  const maxRuns = Math.max(...wormData.flatMap((d) => [d.inn1Cum, d.inn2Cum]), 1);
+  const yMax = Math.ceil(maxRuns / 20) * 20 + 10;
+
+  const xScale = (ball: number) => (ball / Math.max(maxBall, 1)) * chartW;
+  const yScale = (runs: number) => chartH - (runs / yMax) * chartH;
+
+  const buildPath = (key: 'inn1Cum' | 'inn2Cum') =>
+    wormData
+      .map((d, i) => `${i === 0 ? 'M' : 'L'}${PAD.left + xScale(d.ball)},${PAD.top + yScale(d[key])}`)
+      .join(' ');
+
+  const yTicks = [0, Math.round(yMax / 4), Math.round(yMax / 2), Math.round((yMax * 3) / 4), yMax];
+
+  if (wormData.length <= 1) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+        <TrendingUp size={40} className="opacity-30" />
+        <p className="text-sm">No ball data available yet.</p>
+      </div>
+    );
+  }
+
+  const handleMouseMove = (ev: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scale = W / rect.width;
+    const svgX = (ev.clientX - rect.left) * scale;
+    const chartX = svgX - PAD.left;
+    if (chartX < 0 || chartX > chartW) return;
+    const ball = Math.round((chartX / chartW) * maxBall);
+    const nearest = wormData.reduce((prev, cur) =>
+      Math.abs(cur.ball - ball) < Math.abs(prev.ball - ball) ? cur : prev
+    );
+    setTooltip({
+      visible: true,
+      x: ev.clientX - rect.left,
+      y: ev.clientY - rect.top - 10,
+      content: `Ball ${nearest.ball} · ${team1Name}: ${nearest.inn1Cum} | ${team2Name}: ${nearest.inn2Cum}`,
+    });
+  };
+
+  return (
+    <div className="relative">
+      {/* Legend */}
+      <div className="flex gap-4 mb-3 px-1">
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="w-3 h-1.5 rounded" style={{ backgroundColor: color1 }} />
+          {team1Name}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="w-3 h-1.5 rounded" style={{ backgroundColor: color2 }} />
+          {team2Name}
+        </div>
+      </div>
+
+      <div className="bg-gray-50 rounded-2xl p-2 overflow-x-auto">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full"
+          style={{ minWidth: 300 }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setTooltip((t) => ({ ...t, visible: false }))}
+        >
+          {/* Grid */}
+          {yTicks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={PAD.left}
+                x2={W - PAD.right}
+                y1={PAD.top + yScale(tick)}
+                y2={PAD.top + yScale(tick)}
+                stroke="#e5e7eb"
+                strokeWidth={1}
+              />
+              <text
+                x={PAD.left - 5}
+                y={PAD.top + yScale(tick)}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize={9}
+                fill="#9ca3af"
+              >
+                {tick}
+              </text>
+            </g>
+          ))}
+
+          {/* Lines */}
+          <path d={buildPath('inn1Cum')} fill="none" stroke={color1} strokeWidth={2.5} strokeLinejoin="round" />
+          <path d={buildPath('inn2Cum')} fill="none" stroke={color2} strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="5,3" />
+
+          {/* Dots — sample every 6 balls (over boundary) */}
+          {wormData
+            .filter((d) => d.ball % 6 === 0 || d.ball === wormData[wormData.length - 1].ball)
+            .map((d) => (
+              <g key={d.ball}>
+                <circle
+                  cx={PAD.left + xScale(d.ball)}
+                  cy={PAD.top + yScale(d.inn1Cum)}
+                  r={3}
+                  fill={color1}
+                  stroke="white"
+                  strokeWidth={1.5}
+                />
+                {d.inn2Cum > 0 && (
+                  <circle
+                    cx={PAD.left + xScale(d.ball)}
+                    cy={PAD.top + yScale(d.inn2Cum)}
+                    r={3}
+                    fill={color2}
+                    stroke="white"
+                    strokeWidth={1.5}
+                  />
+                )}
+              </g>
+            ))}
+
+          {/* X axis label */}
+          {[0, Math.round(maxBall / 4), Math.round(maxBall / 2), Math.round((maxBall * 3) / 4), maxBall].map((b) => (
+            <text
+              key={b}
+              x={PAD.left + xScale(b)}
+              y={PAD.top + chartH + 14}
+              textAnchor="middle"
+              fontSize={9}
+              fill="#9ca3af"
+            >
+              {b}
+            </text>
+          ))}
+
+          {/* Axes */}
+          <line x1={PAD.left} x2={PAD.left} y1={PAD.top} y2={PAD.top + chartH} stroke="#d1d5db" strokeWidth={1} />
+          <line x1={PAD.left} x2={W - PAD.right} y1={PAD.top + chartH} y2={PAD.top + chartH} stroke="#d1d5db" strokeWidth={1} />
+        </svg>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip.visible && (
+        <div
+          className="absolute z-20 bg-gray-900 text-white text-xs rounded-lg px-3 py-1.5 pointer-events-none shadow-lg whitespace-nowrap"
+          style={{ left: tooltip.x, top: tooltip.y - 36, transform: 'translateX(-50%)' }}
+        >
+          {tooltip.content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Partnerships Chart ───────────────────────────────────────────────────────
+
+function PartnershipsChart({ match }: { match: Match }) {
+  const allPartnerships: Array<Partnership & { teamColor: string; teamName: string }> = match.innings.flatMap(
+    (inning) =>
+      inning.partnerships.map((p) => ({
+        ...p,
+        teamColor: inning.teamColor,
+        teamName: inning.teamName,
+      }))
+  );
+
+  if (allPartnerships.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
+        <Users size={40} className="opacity-30" />
+        <p className="text-sm">No partnership data yet.</p>
+      </div>
+    );
+  }
+
+  const maxRuns = Math.max(...allPartnerships.map((p) => p.totalRuns), 1);
+
+  return (
+    <div className="space-y-1">
+      {/* Innings headers */}
+      {match.innings.map((inning, idx) => {
+        const partnerships = inning.partnerships;
+        if (partnerships.length === 0) return null;
+        return (
+          <div key={inning.teamId} className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: inning.teamColor }} />
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                {inning.teamName} — Innings {idx + 1}
+              </span>
+            </div>
+            {partnerships.map((p) => (
+              <div key={p.wicketIndex} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                {/* Batsmen */}
+                <div className="w-44 flex-shrink-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">
+                    {p.batsman1Name} & {p.batsman2Name}
+                  </p>
+                  <p className="text-xs text-gray-400">{p.totalBalls} balls</p>
+                </div>
+                {/* Bar */}
+                <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full flex items-center pl-2 transition-all duration-700"
+                    style={{
+                      width: `${Math.max((p.totalRuns / maxRuns) * 100, 4)}%`,
+                      backgroundColor: inning.teamColor,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {p.totalRuns > maxRuns * 0.15 && (
+                      <span className="text-white text-xs font-bold">{p.totalRuns}</span>
+                    )}
+                  </div>
+                </div>
+                {/* Runs label */}
+                <div className="w-10 text-right flex-shrink-0">
+                  <span className="text-sm font-bold text-gray-800">{p.totalRuns}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Win Probability Gauge ────────────────────────────────────────────────────
+
+function WinProbGauge({ match }: { match: Match }) {
+  const { chasing, defending, label } = useMemo(() => computeWinProbability(match), [match]);
+
+  const inn1 = match.innings[0];
+  const inn2 = match.innings[1];
+  const chaserName = inn2?.teamName ?? 'Chasing';
+  const defenderName = inn1?.teamName ?? 'Defending';
+  const chaserColor = inn2?.teamColor ?? '#22c55e';
+  const defenderColor = inn1?.teamColor ?? '#ef4444';
+
+  // SVG arc gauge
+  const R = 80;
+  const CX = 120, CY = 100;
+  const startAngle = Math.PI; // left
+  const endAngle = 0;        // right
+  const totalArc = Math.PI;
+
+  const arcPath = (from: number, to: number, r: number) => {
+    const sx = CX + r * Math.cos(from);
+    const sy = CY - r * Math.sin(from);
+    const ex = CX + r * Math.cos(to);
+    const ey = CY - r * Math.sin(to);
+    const largeArc = Math.abs(to - from) > Math.PI ? 1 : 0;
+    return `M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 0 ${ex} ${ey}`;
+  };
+
+  const chasingAngle = startAngle - (chasing / 100) * totalArc;
+
+  // Needle angle
+  const needleAngle = startAngle - (chasing / 100) * totalArc;
+  const needleLen = R - 10;
+  const needleX = CX + needleLen * Math.cos(needleAngle);
+  const needleY = CY - needleLen * Math.sin(needleAngle);
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="bg-gray-50 rounded-2xl p-6 flex flex-col items-center w-full">
+        <svg viewBox="0 0 240 120" className="w-full max-w-xs">
+          {/* Background arc — defender */}
+          <path
+            d={arcPath(Math.PI, 0, R)}
+            fill="none"
+            stroke={defenderColor}
+            strokeWidth={18}
+            strokeLinecap="round"
+            opacity={0.25}
+          />
+          {/* Background arc — chaser */}
+          <path
+            d={arcPath(Math.PI, 0, R)}
+            fill="none"
+            stroke={chaserColor}
+            strokeWidth={18}
+            strokeLinecap="round"
+            opacity={0.25}
+          />
+
+          {/* Filled arc — defender portion (right side) */}
+          <path
+            d={arcPath(chasingAngle, 0, R)}
+            fill="none"
+            stroke={defenderColor}
+            strokeWidth={18}
+            strokeLinecap="butt"
+            opacity={0.85}
+          />
+          {/* Filled arc — chaser portion (left side) */}
+          <path
+            d={arcPath(Math.PI, chasingAngle, R)}
+            fill="none"
+            stroke={chaserColor}
+            strokeWidth={18}
+            strokeLinecap="butt"
+            opacity={0.85}
+          />
+
+          {/* Needle */}
+          <line
+            x1={CX}
+            y1={CY}
+            x2={needleX}
+            y2={needleY}
+            stroke="#1f2937"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          />
+          <circle cx={CX} cy={CY} r={5} fill="#1f2937" />
+
+          {/* Labels */}
+          <text x={CX - R - 2} y={CY + 18} textAnchor="middle" fontSize={9} fill="#6b7280">
+            {defenderName.substring(0, 8)}
+          </text>
+          <text x={CX + R + 2} y={CY + 18} textAnchor="middle" fontSize={9} fill="#6b7280">
+            {chaserName.substring(0, 8)}
+          </text>
+        </svg>
+
+        {/* Percentage display */}
+        <div className="flex items-center gap-6 mt-2">
+          <div className="text-center">
+            <p className="text-2xl font-black" style={{ color: defenderColor }}>
+              {defending}%
+            </p>
+            <p className="text-xs text-gray-500">{defenderName}</p>
+          </div>
+          <div className="w-px h-10 bg-gray-200" />
+          <div className="text-center">
+            <p className="text-2xl font-black" style={{ color: chaserColor }}>
+              {chasing}%
+            </p>
+            <p className="text-xs text-gray-500">{chaserName}</p>
+          </div>
+        </div>
+
+        {/* Context label */}
+        <p className="text-xs text-gray-400 mt-3 text-center">{label}</p>
+      </div>
+
+      {/* Full-width split bar */}
+      <div className="w-full h-4 rounded-full overflow-hidden flex">
+        <div
+          className="h-full transition-all duration-700"
+          style={{ width: `${defending}%`, backgroundColor: defenderColor }}
+        />
+        <div
+          className="h-full transition-all duration-700"
+          style={{ width: `${chasing}%`, backgroundColor: chaserColor }}
+        />
+      </div>
+
+      <div className="flex justify-between w-full text-xs text-gray-500 px-1">
+        <span style={{ color: defenderColor }} className="font-semibold">
+          {defenderName} {defending}%
+        </span>
+        <span style={{ color: chaserColor }} className="font-semibold">
+          {chasing}% {chaserName}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function MatchAnalytics({ match, currentPlan, onOpenPlans }: MatchAnalyticsProps) {
+  const [activeTab, setActiveTab] = useState<TabKey>('mvp');
+
+  const inn1 = match.innings[0];
+  const inn2 = match.innings[1];
+
+  // Computed data (memoized)
+  const mvpEntries = useMemo(() => computeMVP(match), [match]);
+
+  const overData = useMemo(
+    () => computeOverByOver(inn1.balls, inn2.balls, match.overs),
+    [inn1.balls, inn2.balls, match.overs]
+  );
+
+  const wormData = useMemo(() => computeWorm(inn1.balls, inn2.balls), [inn1.balls, inn2.balls]);
+
+  const color1 = match.teamA.color;
+  const color2 = match.teamB.color;
+
+  const planForTab: Record<TabKey, PlanType | 'free'> = {
+    mvp: 'free',
+    manhattan: 'pro',
+    worm: 'pro',
+    partnerships: 'free',
+    winprob: 'premium',
+  };
+
+  const isLocked = !isPlanSufficient(currentPlan, planForTab[activeTab] as PlanType | 'free');
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <BarChart2 size={16} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Match Analytics</h2>
+            <p className="text-xs text-gray-400">Advanced insights & charts</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="px-4 pb-3">
+        <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 overflow-x-auto">
+          {TAB_CONFIG.map((tab) => {
+            const locked = !isPlanSufficient(currentPlan, tab.plan as PlanType | 'free');
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                {locked && (
+                  <Lock size={10} className="text-amber-500 ml-0.5" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-5 pb-5">
+        <div className="relative min-h-48">
+          {/* Actual content (possibly blurred behind overlay) */}
+          <div className={isLocked ? 'blur-sm pointer-events-none select-none' : ''}>
+            {activeTab === 'mvp' && <MVPIndex entries={mvpEntries} />}
+            {activeTab === 'manhattan' && (
+              <ManhattanChart
+                overData={overData}
+                color1={color1}
+                color2={color2}
+                team1Name={match.teamA.name}
+                team2Name={match.teamB.name}
+              />
+            )}
+            {activeTab === 'worm' && (
+              <WormChart
+                wormData={wormData}
+                color1={color1}
+                color2={color2}
+                team1Name={match.teamA.name}
+                team2Name={match.teamB.name}
+              />
+            )}
+            {activeTab === 'partnerships' && <PartnershipsChart match={match} />}
+            {activeTab === 'winprob' && <WinProbGauge match={match} />}
+          </div>
+
+          {/* Locked overlay */}
+          {isLocked && (
+            <LockedOverlay
+              requiredPlan={planForTab[activeTab] as PlanType}
+              onOpenPlans={onOpenPlans}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Plan badges footer */}
+      <div className="px-5 pb-4 flex gap-2 flex-wrap">
+        {(['free', 'pro', 'premium'] as const).map((plan) => (
+          <span
+            key={plan}
+            className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+              plan === 'free'
+                ? 'bg-green-50 text-green-700'
+                : plan === 'pro'
+                ? 'bg-blue-50 text-blue-700'
+                : 'bg-amber-50 text-amber-700'
+            }`}
+          >
+            {plan === 'free' ? '✓ Free' : plan === 'pro' ? '⭐ Pro' : '👑 Premium'}
+            {currentPlan === plan && ' (you)'}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}

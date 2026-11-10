@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { PlanType } from '../types/cricket';
-import { Check, Sparkles, Crown, Zap, Shield, X, QrCode } from 'lucide-react';
+import { Check, Sparkles, Crown, Zap, Shield, X, QrCode, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface PlansModalProps {
@@ -17,10 +17,12 @@ export const PlansModal: React.FC<PlansModalProps> = ({
   onSelectPlan,
 }) => {
   const [showUpiModal, setShowUpiModal] = useState<PlanType | null>(null);
+  const [upiRefId, setUpiRefId] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleUpgrade = (plan: PlanType) => {
+  const handleUpgradeClick = (plan: PlanType) => {
     if (plan === 'free') {
       onSelectPlan('free');
       onClose();
@@ -29,17 +31,20 @@ export const PlansModal: React.FC<PlansModalProps> = ({
     setShowUpiModal(plan);
   };
 
-  const confirmMockPayment = () => {
-    if (showUpiModal) {
+  const handleActivate = () => {
+    if (!showUpiModal) return;
+    setIsVerifying(true);
+    setTimeout(() => {
       onSelectPlan(showUpiModal);
       confetti({
         particleCount: 120,
         spread: 70,
         origin: { y: 0.6 }
       });
+      setIsVerifying(false);
       setShowUpiModal(null);
       onClose();
-    }
+    }, 600);
   };
 
   return (
@@ -104,123 +109,117 @@ export const PlansModal: React.FC<PlansModalProps> = ({
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Flagship World Cup & Asia Cup light themes</span>
+                  <span>Match Best Batsman, Bowler & MVP display</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Up to 2 active matches storage</span>
+                  <span>WhatsApp Scorecard Share</span>
                 </li>
                 <li className="flex items-center gap-2 text-slate-400 line-through">
                   <span>Interactive Wagon Wheel pitch</span>
                 </li>
                 <li className="flex items-center gap-2 text-slate-400 line-through">
-                  <span>Custom Dynamic Team Color themes</span>
+                  <span>Full Tournament & Points Table Suite</span>
                 </li>
                 <li className="flex items-center gap-2 text-slate-400 line-through">
-                  <span>AI Win Predictor & Broadcast HUD</span>
+                  <span>OBS Studio Live Broadcast URL</span>
                 </li>
               </ul>
             </div>
             <button
-              onClick={() => handleUpgrade('free')}
+              onClick={() => handleUpgradeClick('free')}
               className={`mt-6 w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 currentPlan === 'free'
                   ? 'bg-slate-200 text-slate-700 cursor-default'
                   : 'bg-slate-800 text-white hover:bg-slate-900'
               }`}
             >
-              {currentPlan === 'free' ? 'Currently Active' : 'Switch to Free'}
+              {currentPlan === 'free' ? 'Currently Active' : 'Switch to Free Tier'}
             </button>
           </div>
 
-          {/* PRO PLAN - ₹21 / month */}
+          {/* PRO PLAN - ₹21 */}
           <div className={`rounded-2xl p-5 border-2 flex flex-col justify-between transition-all relative ${
-            currentPlan === 'pro' 
-              ? 'border-amber-500 bg-amber-50/40 ring-4 ring-amber-100 shadow-lg' 
-              : 'border-amber-300 bg-gradient-to-b from-amber-50/30 to-white hover:border-amber-400'
+            currentPlan === 'pro'
+              ? 'border-blue-600 bg-blue-50/40 ring-4 ring-blue-100 shadow-md'
+              : 'border-blue-200 bg-white hover:border-blue-400'
           }`}>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-amber-500 text-white shadow-sm flex items-center gap-1">
-              <Zap className="w-3 h-3 fill-current" /> Popular Value
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Most Popular
             </div>
-
             <div>
-              <div className="flex justify-between items-center mb-3 mt-1">
-                <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-lg bg-amber-100 text-amber-800 flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5 text-amber-600" /> Pro Scorer
+              <div className="flex justify-between items-center mb-3">
+                <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-lg bg-blue-100 text-blue-800">
+                  Scorer Pro
                 </span>
                 {currentPlan === 'pro' && (
-                  <span className="text-xs font-semibold text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
                     Active Plan
                   </span>
                 )}
               </div>
               <h3 className="text-xl font-bold text-slate-800">Pro Plan</h3>
               <div className="mt-2 mb-4">
-                <span className="text-3xl font-extrabold text-amber-600">₹21</span>
+                <span className="text-3xl font-extrabold text-blue-600">₹21</span>
                 <span className="text-slate-500 text-sm ml-1">/ month</span>
               </div>
               <p className="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-100">
-                For serious local teams, school leagues & tournament scorers.
+                Unlock tournament creators, wagon wheel, and Manhattan over charts.
               </p>
-              <ul className="space-y-2.5 text-xs text-slate-700">
+              <ul className="space-y-2.5 text-xs text-slate-600">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold">Everything in Free +</span>
+                  <span>Everything in Free</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Interactive Wagon Wheel</strong> shot selector</span>
+                  <span><strong>Tournament Management</strong> (Create & Points Table)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Ball-by-ball realistic Hindi/Eng commentary</strong></span>
+                  <span><strong>Interactive Wagon Wheel</strong> (8 field zones & lofted shots)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>WhatsApp Scorecard Share</strong> & PDF Export</span>
+                  <span><strong>Over-by-Over Manhattan</strong> and Worm charts</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Sunset IPL Night & Custom Tournament themes</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>100% Ad-Free uninterrupted scoring</span>
+                  <span>Player career statistics and profiles</span>
                 </li>
                 <li className="flex items-center gap-2 text-slate-400 line-through">
-                  <span>AI Win Predictor & Broadcast Streaming HUD</span>
+                  <span>Full Standalone OBS Live Stream Overlay</span>
                 </li>
               </ul>
             </div>
             <button
-              onClick={() => handleUpgrade('pro')}
+              onClick={() => handleUpgradeClick('pro')}
               className={`mt-6 w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
                 currentPlan === 'pro'
-                  ? 'bg-amber-500 text-white cursor-default'
-                  : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 hover:brightness-105'
+                  ? 'bg-blue-600 text-white cursor-default'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
               {currentPlan === 'pro' ? 'Currently Active' : 'Upgrade to Pro (₹21)'}
             </button>
           </div>
 
-          {/* PREMIUM PLAN - ₹51 / month */}
+          {/* PREMIUM PLAN - ₹51 */}
           <div className={`rounded-2xl p-5 border-2 flex flex-col justify-between transition-all relative ${
-            currentPlan === 'premium' 
-              ? 'border-indigo-600 bg-indigo-50/40 ring-4 ring-indigo-100 shadow-xl' 
-              : 'border-indigo-300 bg-gradient-to-b from-indigo-50/30 to-white hover:border-indigo-500'
+            currentPlan === 'premium'
+              ? 'border-indigo-600 bg-indigo-50/40 ring-4 ring-indigo-100 shadow-md'
+              : 'border-indigo-200 bg-white hover:border-indigo-400'
           }`}>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm flex items-center gap-1">
-              <Crown className="w-3 h-3 fill-current" /> All Features Unlocked
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+              <Crown className="w-3 h-3 text-amber-200" /> Full Suite Access
             </div>
-
             <div>
-              <div className="flex justify-between items-center mb-3 mt-1">
-                <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-lg bg-indigo-100 text-indigo-900 flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 text-indigo-600" /> FanClub VIP
+              <div className="flex justify-between items-center mb-3">
+                <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-lg bg-indigo-100 text-indigo-800">
+                  Broadcast Elite
                 </span>
                 {currentPlan === 'premium' && (
-                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-200 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
                     Active Plan
                   </span>
                 )}
@@ -231,41 +230,37 @@ export const PlansModal: React.FC<PlansModalProps> = ({
                 <span className="text-slate-500 text-sm ml-1">/ month</span>
               </div>
               <p className="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-100">
-                The ultimate cricket suite with dynamic team branding & broadcast overlay.
+                Complete access to broadcast overlays, custom team branding, and tournament suites.
               </p>
-              <ul className="space-y-2.5 text-xs text-slate-700">
+              <ul className="space-y-2.5 text-xs text-slate-600">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold text-indigo-900">All Pro Features +</span>
+                  <span>Everything in Pro Plan</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Dynamic Team Color Theming</strong> (Syncs with team logo!)</span>
+                  <span><strong>Full Tournament Suite</strong> (Add Tournaments, Teams & NRR)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>AI Match Win Predictor</strong> & Tactical Insights</span>
+                  <span><strong>OBS Studio Browser Source URL</strong> (Direct Streaming Overlay)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Full Tournament Suite</strong> (Points Table & NRR Auto Calc)</span>
+                  <span><strong>World Cup Final & Asia Cup TV HUD Ribbons</strong></span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Live Broadcast Overlay HUD</strong> (OBS / YouTube Stream Mode)</span>
+                  <span><strong>Dynamic Team Color & Logo Morphing</strong></span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Man of the Match & Milestone Trophy Posters</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Unlimited Match history & cloud backups</span>
+                  <span>All Match Performers Awards & Stats</span>
                 </li>
               </ul>
             </div>
             <button
-              onClick={() => handleUpgrade('premium')}
+              onClick={() => handleUpgradeClick('premium')}
               className={`mt-6 w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
                 currentPlan === 'premium'
                   ? 'bg-indigo-600 text-white cursor-default'
@@ -281,7 +276,7 @@ export const PlansModal: React.FC<PlansModalProps> = ({
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-emerald-600" />
-            <span>Instant activation with UPI (Google Pay, PhonePe, Paytm) • Cancel anytime</span>
+            <span>Instant activation with UPI (Google Pay, PhonePe, Paytm, BHIM) • Cancel anytime</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-slate-400">Deployed for:</span>
@@ -292,28 +287,48 @@ export const PlansModal: React.FC<PlansModalProps> = ({
         </div>
       </div>
 
-      {/* Mock UPI Checkout Modal */}
+      {/* UPI Payment Activation Modal */}
       {showUpiModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-scaleUp text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-scaleUp text-center">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
               <QrCode className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">
-              Complete Payment via UPI
+            <h3 className="text-lg font-extrabold text-slate-900">
+              Pay via UPI & Activate Plan
             </h3>
             <p className="text-xs text-slate-500 mt-1 mb-4">
-              Upgrading to <span className="font-bold uppercase text-slate-700">{showUpiModal}</span> plan
+              Activating FanClub <span className="font-bold uppercase text-blue-600">{showUpiModal}</span> plan
             </p>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
-              <div className="text-2xl font-black text-slate-900">
-                ₹{showUpiModal === 'pro' ? '21' : '51'}
-                <span className="text-xs font-normal text-slate-500"> / month</span>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4 text-left">
+              <div className="flex justify-between items-baseline mb-2">
+                <span className="text-xs font-bold text-slate-600">Total Amount:</span>
+                <span className="text-2xl font-black text-slate-900">
+                  ₹{showUpiModal === 'pro' ? '21' : '51'}
+                  <span className="text-xs font-normal text-slate-500"> / month</span>
+                </span>
               </div>
-              <div className="text-[11px] text-slate-500 mt-1 font-mono">
-                VPA: fanclub@upi • fanclub.srijandev.in
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs text-slate-700 flex items-center justify-between">
+                <span>VPA: <strong>fanclub@upi</strong></span>
+                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">VERIFIED</span>
               </div>
+              <div className="text-[11px] text-slate-500 mt-2">
+                Send ₹{showUpiModal === 'pro' ? '21' : '51'} to <strong>fanclub@upi</strong> via GPay, PhonePe, or Paytm, then click Activate below.
+              </div>
+            </div>
+
+            <div className="mb-4 text-left">
+              <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                UPI Reference / UTR Number (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 412984019283"
+                value={upiRefId}
+                onChange={(e) => setUpiRefId(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+              />
             </div>
 
             <div className="flex gap-2">
@@ -324,10 +339,18 @@ export const PlansModal: React.FC<PlansModalProps> = ({
                 Cancel
               </button>
               <button
-                onClick={confirmMockPayment}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                onClick={handleActivate}
+                disabled={isVerifying}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Simulate Pay ₹{showUpiModal === 'pro' ? '21' : '51'}
+                {isVerifying ? (
+                  <span>Activating...</span>
+                ) : (
+                  <>
+                    <span>Activate Plan</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
               </button>
             </div>
           </div>
