@@ -32,7 +32,15 @@ import type {
 } from '../../types/cricHeroes';
 import type { AuditLogEntry } from '../../types/database';
 
-export const CricHeroesMigrationCenter: React.FC = () => {
+interface CricHeroesMigrationCenterProps {
+  onAddPlayerToMatch?: (player: any, teamId?: string) => void;
+  onViewPlayerInDb?: (playerId: string) => void;
+}
+
+export const CricHeroesMigrationCenter: React.FC<CricHeroesMigrationCenterProps> = ({
+  onAddPlayerToMatch,
+  onViewPlayerInDb,
+}) => {
   const [activeJob, setActiveJob] = useState<CricHeroesMigrationJob | null>(
     cricHeroesMigrationEngine.getActiveJob()
   );
@@ -382,7 +390,10 @@ export const CricHeroesMigrationCenter: React.FC = () => {
 
           {/* Mode Content: Live Lookup */}
           {importMode === 'lookup' && (
-            <CricHeroesPlayerLookup />
+            <CricHeroesPlayerLookup
+              onAddPlayerToMatch={onAddPlayerToMatch}
+              onViewPlayerInDb={onViewPlayerInDb}
+            />
           )}
 
           {/* Mode Content: Sample */}

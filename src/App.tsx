@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { 
   Match, 
+  Player,
   PlanType, 
   ObsThemeId, 
   ExtraType, 
@@ -388,6 +389,31 @@ export function App() {
     }
   };
 
+  const handleAddPlayerToMatch = (player: Player, teamId?: string) => {
+    setMatch((prevMatch) => {
+      const isTeamB = teamId === prevMatch.teamB.id;
+      const targetTeam = isTeamB ? prevMatch.teamB : prevMatch.teamA;
+
+      if (targetTeam.players.some((p) => p.id === player.id || p.fanClubId === player.fanClubId)) {
+        return prevMatch;
+      }
+
+      const updatedTeam = {
+        ...targetTeam,
+        players: [...targetTeam.players, player],
+      };
+
+      const updatedMatch: Match = {
+        ...prevMatch,
+        teamA: isTeamB ? prevMatch.teamA : updatedTeam,
+        teamB: isTeamB ? updatedTeam : prevMatch.teamB,
+      };
+
+      localStorage.setItem('fanclub_active_match_v5', JSON.stringify(updatedMatch));
+      return updatedMatch;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Master Top Navigation Bar */}
@@ -519,7 +545,15 @@ export function App() {
 
         {/* 4. CRICHEROES DATA MIGRATION ENGINE */}
         {activeTab === 'migration' && (
-          <CricHeroesMigrationCenter />
+          <CricHeroesMigrationCenter
+            onAddPlayerToMatch={(player, teamId) => {
+              handleAddPlayerToMatch(player, teamId);
+              setActiveTab('scoring');
+            }}
+            onViewPlayerInDb={(id) => {
+              setActiveTab('players');
+            }}
+          />
         )}
 
         {/* 5. PLAYER DATABASE & PASSPORTS */}
