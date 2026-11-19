@@ -4,7 +4,7 @@
 // transactions, reactive subscriptions, and backup/restore.
 // ============================================================
 import type { Player, Team, Club, Match, Tournament, Venue } from '../types/cricket';
-import type { User, DataProviderRecord, AuditLogEntry, ObsOverlayToken, FanClubDatabaseSchema } from '../types/database';
+import type { User, DataProviderRecord, AuditLogEntry, ObsOverlayToken, FanClubDatabaseSchema, ImportBatchRecord } from '../types/database';
 import type { CommunityPost } from '../types/community';
 import {
   SEED_PLAYERS,
@@ -41,6 +41,7 @@ class FanClubDatabase {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.players && parsed.teams && parsed.matches) {
+          if (!parsed.importBatches) parsed.importBatches = [];
           return parsed;
         }
       }
@@ -84,6 +85,7 @@ class FanClubDatabase {
       ],
       dataProviders: SEED_DATA_PROVIDERS,
       auditLogs: SEED_AUDIT_LOGS,
+      importBatches: [],
     };
   }
 
@@ -234,6 +236,118 @@ class FanClubDatabase {
     this.schema.players = this.schema.players.filter(x => x.id !== id && x.fanClubId !== id);
     if (p) this.log('PLAYER_DELETED', 'player', id, `Player removed: ${p.name}`);
     this.persist();
+  }
+
+  // ─── Import Batches & Acquisition API ────────────────────────
+  public getImportBatches(): ImportBatchRecord[] {
+    return this.schema.importBatches ? [...this.schema.importBatches] : [];
+  }
+
+  public getImportBatchById(batchId: string): ImportBatchRecord | undefined {
+    return (this.schema.importBatches || []).find(b => b.batchId === batchId || b.id === batchId);
+  }
+
+  public saveImportBatch(batch: ImportBatchRecord): void {
+    if (!this.schema.importBatches) this.schema.importBatches = [];
+    const idx = this.schema.importBatches.findIndex(b => b.batchId === batch.batchId || b.id === batch.id);
+    if (idx >= 0) {
+      this.schema.importBatches[idx] = batch;
+    } else {
+      this.schema.importBatches.unshift(batch);
+    }
+    this.persist();
+  }
+
+  public rollbackBatch(batchId: string): { success: boolean; playersRemoved: number; message: string } {
+    if (!this.schema.importBatches) this.schema.importBatches = [];
+    const batch = this.schema.importBatches.find(b => b.batchId === batchId || b.id === batchId);
+    if (!batch) {
+      return { success: false, playersRemoved: 0, message: `Batch ${batchId} not found in database.` };
+    }
+    if (batch.status === 'rolled_back') {
+      return { success: false, playersRemoved: 0, message: `Batch ${batchId} was already rolled back on ${batch.rolledBackAt}.` };
+    }
+
+    const playerIdsToRemove = new Set(batch.playerIds);
+    const initialCount = this.schema.players.length;
+
+    // Filter out players who were created as part of this batch
+    this.schema.players = this.schema.players.filter(p => {
+      const matchBatchId = p.dataProvenance?.batchId === batchId;
+      const matchPlayerId = playerIdsToRemove.has(p.id) || playerIdsToRemove.has(p.fanClubId);
+      if (matchBatchId || matchPlayerId) {
+        // Also remove external ID mapping if present
+        if (p.cricheroesId && this.schema.playerExternalIds[p.cricheroesId]) {
+          delete this.schema.playerExternalIds[p.cricheroesId];
+        }
+        return false;
+      }
+      return true;
+    });
+
+    const removedCount = initialCount - this.schema.players.length;
+
+    // Update batch record
+    batch.status = 'rolled_back';
+    batch.rolledBackAt = new Date().toISOString();
+
+    this.log(
+      'BATCH_ROLLEDBACK',
+      'migration',
+      batch.batchId,
+      `Rolled back batch "${batch.fileName}" (${batchId}): ${removedCount} genuine player records removed`
+    );
+
+    this.persist();
+    return {
+      success: true,
+      playersRemoved: removedCount,
+      message: `Successfully rolled back batch "${batch.fileName}". Removed ${removedCount} player profiles.`,
+    };
+  }
+
+  public claimPlayerProfile(
+    playerId: string,
+    claimData: {
+      claimerName: string;
+      phoneHash?: string;
+      phoneMasked?: string;
+      email?: string;
+      idProofType?: string;
+      idProofRef?: string;
+    }
+  ): { success: boolean; player?: Player; message: string } {
+    const player = this.schema.players.find(p => p.id === playerId || p.fanClubId === playerId);
+    if (!player) {
+      return { success: false, message: 'Player profile not found.' };
+    }
+
+    const claimToken = `FC-CLM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    player.isVerified = true;
+    player.verificationStatus = 'verified';
+    player.contactPhoneHash = claimData.phoneHash;
+    player.contactPhoneMasked = claimData.phoneMasked;
+    player.claimedByUserId = claimData.email || claimData.claimerName;
+    player.claimedAt = new Date().toISOString();
+    player.claimToken = claimToken;
+    player.idProofType = claimData.idProofType;
+    player.idProofRef = claimData.idProofRef;
+    player.digitalPassportUrl = `https://fanclub.srijandev.in/passport/${player.fanClubId}`;
+
+    this.log(
+      'PLAYER_CLAIMED',
+      'player',
+      player.id,
+      `Grassroots profile claimed by ${claimData.claimerName} (Token: ${claimToken})`
+    );
+
+    this.persist();
+    return {
+      success: true,
+      player,
+      message: `Profile successfully claimed and verified for ${player.name}! Passport token generated.`,
+    };
   }
 
   // ─── Teams API ───────────────────────────────────────────────

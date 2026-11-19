@@ -69,6 +69,25 @@ export interface ObsOverlayToken {
   lastAccessedAt?: string;
 }
 
+export interface ImportBatchRecord {
+  id: string;
+  batchId: string;
+  fileName: string;
+  fileType: 'xlsx' | 'xls' | 'csv' | 'json' | 'cricsheet' | 'roster_template';
+  source: 'team_roster_upload' | 'tournament_entry' | 'grassroots_claim' | 'cricsheet_open_data' | 'excel_import' | 'cricHeroes_export';
+  grassrootsCategory?: string;
+  uploadedBy: string;
+  rowCount: number;
+  importedCount: number;
+  skippedCount: number;
+  duplicateCount: number;
+  timestamp: string;
+  status: 'completed' | 'in_progress' | 'rolled_back' | 'failed';
+  rolledBackAt?: string;
+  playerIds: string[];
+  errorLog?: string[];
+}
+
 export interface FanClubDatabaseSchema {
   users: User[];
   players: Player[];
@@ -81,4 +100,5 @@ export interface FanClubDatabaseSchema {
   obsTokens: ObsOverlayToken[];
   dataProviders: DataProviderRecord[];
   auditLogs: AuditLogEntry[];
+  importBatches?: ImportBatchRecord[];
 }

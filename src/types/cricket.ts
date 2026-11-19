@@ -92,6 +92,32 @@ export interface PlayerAchievement {
   badgeIcon: string;
 }
 
+export type PlayerProvenanceSource =
+  | 'cricHeroes'
+  | 'sportmonks'
+  | 'cricketData'
+  | 'manual'
+  | 'localClub'
+  | 'system'
+  | 'team_roster_upload'
+  | 'tournament_entry'
+  | 'grassroots_claim'
+  | 'cricsheet_open_data'
+  | 'excel_import'
+  | 'cricHeroes_export';
+
+export type GrassrootsCategory =
+  | 'village_district'
+  | 'school_college'
+  | 'corporate'
+  | 'tennis_ball'
+  | 'womens_cricket'
+  | 'city_club'
+  | 'box_cricket'
+  | 'state_league';
+
+export type PlayerVerificationStatus = 'unverified' | 'claimed' | 'verified' | 'pending_review';
+
 // ---- Player ----
 export interface Player {
   id: string;
@@ -113,16 +139,29 @@ export interface Player {
   currentTeam?: string;
   teams: string[];
   isVerified: boolean;
+  verificationStatus?: PlayerVerificationStatus;
+  grassrootsCategory?: GrassrootsCategory;
   isInternational: boolean;
   isDomestic: boolean;
   isLocalClub: boolean;
   cricheroesId?: string;
   externalProviderIds?: Record<string, string>;
+  contactPhoneHash?: string;
+  contactPhoneMasked?: string;
+  claimedByUserId?: string;
+  claimedAt?: string;
+  claimToken?: string;
+  idProofType?: string;
+  idProofRef?: string;
   dataProvenance: {
-    source: 'cricHeroes' | 'sportmonks' | 'cricketData' | 'manual' | 'localClub' | 'system';
+    source: PlayerProvenanceSource;
     importedAt: string;
     lastSyncedAt?: string;
     licenseAttribution?: string;
+    batchId?: string;
+    sourceFileRef?: string;
+    externalId?: string;
+    sourceUrl?: string;
   };
   overallStats: FormatStats;
   statsByFormat: {

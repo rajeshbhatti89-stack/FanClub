@@ -18,7 +18,8 @@ import {
   Globe2, 
   Search,
   User as UserIcon,
-  Crown
+  Crown,
+  HeartHandshake
 } from 'lucide-react';
 import type { PlanType } from '../../types/cricket';
 import { i18nService, type LanguageCode } from '../../services/i18n';
@@ -26,6 +27,7 @@ import { i18nService, type LanguageCode } from '../../services/i18n';
 export type MainNavTab = 
   | 'scoring'
   | 'live'
+  | 'grassroots'
   | 'migration'
   | 'players'
   | 'teams'
@@ -69,7 +71,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const navItems: { id: MainNavTab; label: string; icon: React.ReactNode; badge?: string; highlight?: boolean }[] = [
     { id: 'scoring', label: t('scoringPad'), icon: <Activity size={15} /> },
     { id: 'live', label: t('liveMatches'), icon: <Radio size={15} className="text-red-500 animate-pulse" />, badge: 'LIVE' },
-    { id: 'migration', label: t('cricHeroesMigration'), icon: <Database size={15} className="text-emerald-400" />, badge: 'AUTO', highlight: true },
+    { id: 'grassroots', label: 'Grassroots Hub', icon: <HeartHandshake size={15} className="text-emerald-400" />, badge: 'NEW', highlight: true },
+    { id: 'migration', label: t('cricHeroesMigration'), icon: <Database size={15} className="text-emerald-400" />, badge: 'AUTO' },
     { id: 'players', label: t('playerDatabase'), icon: <Users size={15} /> },
     { id: 'teams', label: t('teamsClubs'), icon: <ShieldCheck size={15} /> },
     { id: 'tournaments', label: t('tournaments'), icon: <Trophy size={15} /> },

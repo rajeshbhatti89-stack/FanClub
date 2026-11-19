@@ -23,7 +23,15 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 
-export const PlayerDatabaseView: React.FC = () => {
+interface PlayerDatabaseViewProps {
+  onNavigateToGrassroots?: () => void;
+  onNavigateToClaim?: () => void;
+}
+
+export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
+  onNavigateToGrassroots,
+  onNavigateToClaim,
+}) => {
   const [players, setPlayers] = useState<Player[]>(db.getPlayers());
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -59,7 +67,15 @@ export const PlayerDatabaseView: React.FC = () => {
     if (categoryFilter === 'international') matchesCategory = !!p.isInternational;
     else if (categoryFilter === 'domestic') matchesCategory = !!p.isDomestic;
     else if (categoryFilter === 'local') matchesCategory = !!p.isLocalClub;
-    else if (categoryFilter === 'cricHeroes') matchesCategory = p.dataProvenance.source === 'cricHeroes';
+    else if (categoryFilter === 'cricHeroes') matchesCategory = p.dataProvenance?.source === 'cricHeroes';
+    else if (categoryFilter === 'village_district') matchesCategory = p.grassrootsCategory === 'village_district';
+    else if (categoryFilter === 'corporate') matchesCategory = p.grassrootsCategory === 'corporate';
+    else if (categoryFilter === 'school_college') matchesCategory = p.grassrootsCategory === 'school_college';
+    else if (categoryFilter === 'tennis_ball') matchesCategory = p.grassrootsCategory === 'tennis_ball';
+    else if (categoryFilter === 'womens_cricket') matchesCategory = p.grassrootsCategory === 'womens_cricket';
+    else if (categoryFilter === 'city_club') matchesCategory = p.grassrootsCategory === 'city_club';
+    else if (categoryFilter === 'unverified') matchesCategory = !p.isVerified && p.verificationStatus !== 'verified';
+    else if (categoryFilter === 'verified') matchesCategory = !!p.isVerified || p.verificationStatus === 'verified';
 
     return matchesSearch && matchesRole && matchesCountry && matchesCategory;
   });
@@ -101,6 +117,26 @@ export const PlayerDatabaseView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {onNavigateToGrassroots && (
+            <button
+              onClick={onNavigateToGrassroots}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-emerald-500/20"
+            >
+              <Plus size={14} />
+              <span>+ Grassroots Onboarding</span>
+            </button>
+          )}
+
+          {onNavigateToClaim && (
+            <button
+              onClick={onNavigateToClaim}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+            >
+              <QrCode size={14} />
+              <span>Claim Profile</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               setIsCompareMode(!isCompareMode);
@@ -203,10 +239,17 @@ export const PlayerDatabaseView: React.FC = () => {
           className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
         >
           <option value="all">All Categories</option>
-          <option value="international">International Tier</option>
-          <option value="domestic">Domestic & Franchise</option>
-          <option value="cricHeroes">CricHeroes Migrated</option>
-          <option value="local">Local Club Talent</option>
+          <option value="unverified">⚡ Unverified Grassroots (Claimable)</option>
+          <option value="verified">🛡️ Verified Digital Passports</option>
+          <option value="village_district">🌾 Village & District Teams</option>
+          <option value="corporate">🏢 Corporate Tournaments</option>
+          <option value="school_college">🎓 School & College Youth</option>
+          <option value="tennis_ball">🎾 Tennis-Ball & Box Cricket</option>
+          <option value="womens_cricket">👑 Women's Cricket</option>
+          <option value="city_club">🏛️ City & State Clubs</option>
+          <option value="cricHeroes">🏏 CricHeroes Migrated</option>
+          <option value="international">🌍 International Tier</option>
+          <option value="domestic">🏆 Domestic & Franchise</option>
         </select>
       </div>
 
@@ -253,20 +296,45 @@ export const PlayerDatabaseView: React.FC = () => {
                     >
                       {player.name}
                     </h3>
-                    {player.isVerified && (
-                      <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                    {(player.isVerified || player.verificationStatus === 'verified') ? (
+                      <span title="Verified Cricket Passport">
+                        <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                      </span>
+                    ) : (
+                      <span title="Unverified Grassroots Profile" className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
                     )}
                   </div>
 
                   <p className="text-xs text-slate-400 capitalize mt-0.5">
-                    {player.role} • {player.country}
+                    {player.role} • {player.city || player.country}
                   </p>
 
                   <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-emerald-400 font-bold">
                       {player.fanClubId}
                     </span>
-                    {player.dataProvenance.source === 'cricHeroes' && (
+
+                    {(player.isVerified || player.verificationStatus === 'verified') ? (
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+                        Verified
+                      </span>
+                    ) : player.verificationStatus === 'claimed' ? (
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300">
+                        Claimed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
+                        Unverified
+                      </span>
+                    )}
+
+                    {player.grassrootsCategory && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                        {player.grassrootsCategory.replace(/_/g, ' ')}
+                      </span>
+                    )}
+
+                    {player.dataProvenance?.source === 'cricHeroes' && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
                         CricHeroes
                       </span>
@@ -275,23 +343,29 @@ export const PlayerDatabaseView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Stats Row */}
+              {/* Stats Row (Real numbers preserved, zero fake data) */}
               <div className="mt-4 grid grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-center">
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Matches</div>
-                  <div className="text-xs font-black text-white">{stats.matches}</div>
+                  <div className="text-xs font-black text-white">{player.matches ?? stats.matches ?? 0}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Runs</div>
-                  <div className="text-xs font-black text-emerald-400">{stats.runs}</div>
+                  <div className="text-xs font-black text-emerald-400">
+                    {player.runs !== undefined ? player.runs : stats.runs > 0 ? stats.runs : '-'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Wickets</div>
-                  <div className="text-xs font-black text-cyan-400">{stats.wickets}</div>
+                  <div className="text-xs font-black text-cyan-400">
+                    {player.wickets !== undefined ? player.wickets : stats.wickets > 0 ? stats.wickets : '-'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Avg / SR</div>
-                  <div className="text-xs font-black text-white">{stats.battingAverage.toFixed(1)}</div>
+                  <div className="text-xs font-black text-white">
+                    {stats.battingAverage > 0 ? stats.battingAverage.toFixed(1) : '-'}
+                  </div>
                 </div>
               </div>
 
@@ -314,6 +388,13 @@ export const PlayerDatabaseView: React.FC = () => {
                     }`}
                   >
                     {isSelected ? 'Selected' : '+ Compare'}
+                  </button>
+                ) : !player.isVerified && player.verificationStatus !== 'verified' && onNavigateToClaim ? (
+                  <button
+                    onClick={onNavigateToClaim}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all"
+                  >
+                    Claim Profile
                   </button>
                 ) : (
                   <button

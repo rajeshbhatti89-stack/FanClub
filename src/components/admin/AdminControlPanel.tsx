@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../db/database';
 import type { User, DataProviderRecord, AuditLogEntry, UserRole } from '../../types/database';
+import { RealPlayerAcquisitionDashboard } from './RealPlayerAcquisitionDashboard';
 import { 
   ShieldCheck, 
   Users, 
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const AdminControlPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'users' | 'providers' | 'backup' | 'audit'>('users');
+  const [activeTab, setActiveTab] = useState<'acquisition' | 'users' | 'providers' | 'backup' | 'audit'>('acquisition');
   const [users, setUsers] = useState<User[]>(db.getUsers());
   const [providers, setProviders] = useState<DataProviderRecord[]>(db.getDataProviders());
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(db.getAuditLogs());
@@ -124,8 +125,9 @@ export const AdminControlPanel: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="mt-6 flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit">
+      <div className="mt-6 flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit flex-wrap">
         {[
+          { id: 'acquisition', label: 'Acquisition & Provenance', icon: <ShieldCheck size={14} className="text-emerald-400" /> },
           { id: 'users', label: 'User RBAC', icon: <Users size={14} /> },
           { id: 'providers', label: 'Data Providers', icon: <Wifi size={14} /> },
           { id: 'backup', label: 'Backup & Restore', icon: <Database size={14} /> },
@@ -145,6 +147,13 @@ export const AdminControlPanel: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {/* Tab: Real Player Acquisition Dashboard */}
+      {activeTab === 'acquisition' && (
+        <div className="mt-6">
+          <RealPlayerAcquisitionDashboard />
+        </div>
+      )}
 
       {/* Tab: Users */}
       {activeTab === 'users' && (

@@ -22,6 +22,8 @@ import { PlansModal } from './components/PlansModal';
 import NewMatchModal from './components/NewMatchModal';
 import { CricHeroesMigrationCenter } from './components/migration/CricHeroesMigrationCenter';
 import { PlayerDatabaseView } from './components/players/PlayerDatabaseView';
+import { GrassrootsOnboardingHub } from './components/grassroots/GrassrootsOnboardingHub';
+import { PlayerClaimPortal } from './components/players/PlayerClaimPortal';
 import { LiveCricketCenter } from './components/live/LiveCricketCenter';
 import { TeamsAndClubsView } from './components/teams/TeamsAndClubsView';
 import { ObsControlCenter } from './components/obs/ObsControlCenter';
@@ -82,6 +84,7 @@ export function App() {
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
   const [isNewMatchModalOpen, setIsNewMatchModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isClaimPortalOpen, setIsClaimPortalOpen] = useState(false);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -495,14 +498,25 @@ export function App() {
           />
         )}
 
-        {/* 3. CRICHEROES DATA MIGRATION ENGINE */}
+        {/* 3. GRASSROOTS ONBOARDING & NO-API PLAYER ACQUISITION */}
+        {activeTab === 'grassroots' && (
+          <GrassrootsOnboardingHub
+            onNavigateToClaim={() => setIsClaimPortalOpen(true)}
+            onNavigateToPlayers={() => setActiveTab('players')}
+          />
+        )}
+
+        {/* 4. CRICHEROES DATA MIGRATION ENGINE */}
         {activeTab === 'migration' && (
           <CricHeroesMigrationCenter />
         )}
 
-        {/* 4. PLAYER DATABASE & PASSPORTS */}
+        {/* 5. PLAYER DATABASE & PASSPORTS */}
         {activeTab === 'players' && (
-          <PlayerDatabaseView />
+          <PlayerDatabaseView
+            onNavigateToGrassroots={() => setActiveTab('grassroots')}
+            onNavigateToClaim={() => setIsClaimPortalOpen(true)}
+          />
         )}
 
         {/* 5. TEAMS & LOCAL CLUBS */}
@@ -593,6 +607,21 @@ export function App() {
           onClose={() => setIsAuthModalOpen(false)}
           onSuccess={(user) => setCurrentUser(user)}
         />
+      )}
+
+      {/* Grassroots Player Claim Portal Modal */}
+      {isClaimPortalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/90 backdrop-blur-md p-4 sm:p-6 animate-in fade-in">
+          <div className="max-w-6xl mx-auto relative bg-slate-900 border border-indigo-500/30 rounded-3xl p-4 sm:p-8 shadow-2xl">
+            <button
+              onClick={() => setIsClaimPortalOpen(false)}
+              className="absolute top-6 right-6 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-all border border-slate-700"
+            >
+              ✕ Close Portal
+            </button>
+            <PlayerClaimPortal onBackToRegistry={() => setIsClaimPortalOpen(false)} />
+          </div>
+        </div>
       )}
     </div>
   );
