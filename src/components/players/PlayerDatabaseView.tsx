@@ -53,12 +53,19 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
 
   // Filter players
   const filtered = players.filter((p) => {
+    const q = search.trim().toLowerCase();
+    const isCricHeroesQuery = q.includes('cricheroes') || q.includes('crick hero') || q.includes('crichero') || q === 'ch';
+
     const matchesSearch =
-      search === '' ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.fanClubId.toLowerCase().includes(search.toLowerCase()) ||
-      (p.city && p.city.toLowerCase().includes(search.toLowerCase())) ||
-      (p.teams && p.teams.some((t) => t.toLowerCase().includes(search.toLowerCase())));
+      q === '' ||
+      p.name.toLowerCase().includes(q) ||
+      (p.fullName && p.fullName.toLowerCase().includes(q)) ||
+      p.fanClubId.toLowerCase().includes(q) ||
+      (p.cricheroesId && p.cricheroesId.toLowerCase().includes(q)) ||
+      (isCricHeroesQuery && (!!p.cricheroesId || p.dataProvenance?.source === 'cricHeroes')) ||
+      (p.city && p.city.toLowerCase().includes(q)) ||
+      (p.currentTeam && p.currentTeam.toLowerCase().includes(q)) ||
+      (p.teams && p.teams.some((t) => t.toLowerCase().includes(q)));
 
     const matchesRole = roleFilter === 'all' || p.role === roleFilter;
     const matchesCountry = countryFilter === 'all' || p.country === countryFilter;
@@ -67,7 +74,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
     if (categoryFilter === 'international') matchesCategory = !!p.isInternational;
     else if (categoryFilter === 'domestic') matchesCategory = !!p.isDomestic;
     else if (categoryFilter === 'local') matchesCategory = !!p.isLocalClub;
-    else if (categoryFilter === 'cricHeroes') matchesCategory = p.dataProvenance?.source === 'cricHeroes';
+    else if (categoryFilter === 'cricHeroes') matchesCategory = p.dataProvenance?.source === 'cricHeroes' || !!p.cricheroesId;
     else if (categoryFilter === 'village_district') matchesCategory = p.grassrootsCategory === 'village_district';
     else if (categoryFilter === 'corporate') matchesCategory = p.grassrootsCategory === 'corporate';
     else if (categoryFilter === 'school_college') matchesCategory = p.grassrootsCategory === 'school_college';
@@ -191,8 +198,35 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
         </div>
       )}
 
+      {/* Quick Filter Category Pills */}
+      <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        {[
+          { id: 'all', label: `All Players (${players.length})` },
+          { id: 'cricHeroes', label: `🏏 CricHeroes Players (${players.filter(p => p.dataProvenance?.source === 'cricHeroes' || !!p.cricheroesId).length})`, highlight: true },
+          { id: 'local', label: `🌾 Grassroots & Local (${players.filter(p => p.isLocalClub).length})` },
+          { id: 'international', label: `🌍 International Legends (${players.filter(p => p.isInternational).length})` },
+          { id: 'unverified', label: `⚡ Claimable Profiles (${players.filter(p => !p.isVerified).length})` },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setCategoryFilter(tab.id)}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all border ${
+              categoryFilter === tab.id
+                ? tab.highlight
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md'
+                  : 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-md'
+                : tab.highlight
+                ? 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-500/30'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filter and Search Bar */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Search Input */}
         <div className="relative">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -200,7 +234,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, FC ID, city, team..."
+            placeholder="Search name, CricHeroes ID, city, team..."
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>

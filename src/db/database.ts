@@ -19,7 +19,7 @@ import {
 } from './seedData';
 import { DEFAULT_INITIAL_MATCH } from '../data/initialState';
 
-const STORAGE_KEY = 'fanclub_master_db_v5';
+const STORAGE_KEY = 'fanclub_master_db_v6';
 const ACTIVE_MATCH_KEY = 'fanclub_active_match_id';
 
 type ChangeListener = () => void;
@@ -37,11 +37,18 @@ class FanClubDatabase {
   // ─── Persistence ─────────────────────────────────────────────
   private loadSchema(): FanClubDatabaseSchema {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('fanclub_master_db_v5');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.players && parsed.teams && parsed.matches) {
           if (!parsed.importBatches) parsed.importBatches = [];
+          // Ensure all CricHeroes seed players are merged into active storage
+          SEED_PLAYERS.forEach(sp => {
+            const exists = parsed.players.some((p: Player) => p.id === sp.id || (sp.cricheroesId && p.cricheroesId === sp.cricheroesId));
+            if (!exists) {
+              parsed.players.push(sp);
+            }
+          });
           return parsed;
         }
       }
