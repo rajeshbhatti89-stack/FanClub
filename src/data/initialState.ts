@@ -147,6 +147,7 @@ export const DEFAULT_TEAMS: Team[] = [
     logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=80',
     teamStats: { matches: 42, won: 30, lost: 11, tied: 1, noResult: 0, winPercentage: 71.4 },
     players: [
+      createPlayerObj('rs-rb-89', 'Rajesh Bhatti', 'allrounder', 'RHB', 'Right-arm Fast', 240, 220, 1540, 86, 32, 8, 0, 128.5, 24.8, 213, 6.4, 18.2, '5/18', 62, 14, 18),
       createPlayerObj('rs-1', 'Aakash Verma (C)', 'batsman', 'RHB', 'Right-arm Off-Spin', 68, 62, 2450, 114, 8, 16, 3, 142.5, 45.37, 12, 7.2, 28.5, '3/18', 28, 6, 0),
       createPlayerObj('rs-2', 'Rahul Sharma (WK)', 'wicketkeeper', 'LHB', undefined, 92, 88, 3120, 96, 14, 22, 0, 138.2, 42.16, 0, 0, 0, '0/0', 62, 14, 14),
       createPlayerObj('rs-3', 'Mohit Deshmukh', 'allrounder', 'RHB', 'Right-arm Fast-Medium', 55, 48, 1420, 82, 7, 9, 0, 144.8, 34.6, 64, 6.8, 22.4, '4/22', 21, 5, 0),

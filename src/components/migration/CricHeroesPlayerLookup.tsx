@@ -64,7 +64,7 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({
 
   // Auto-run initial popular suggestions on mount so the user never sees a blank screen!
   useEffect(() => {
-    handleSearch('Verma');
+    handleSearch('Rajesh Bhatti');
   }, []);
 
   const showNotification = (type: 'success' | 'info' | 'error', message: string) => {
@@ -270,7 +270,9 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({
         <div className="mt-4 flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
           <span className="font-bold text-slate-700">Quick Searches:</span>
           {[
-            { label: 'Aakash Verma', query: 'Aakash Verma' },
+            { label: '⭐ Rajesh Bhatti (240 M, 213 W)', query: 'Rajesh Bhatti' },
+            { label: 'R. S. Bhatti (Amritsar)', query: 'R. S. Bhatti' },
+            { label: 'Aakash Verma (Mumbai)', query: 'Aakash Verma' },
             { label: 'Krishna Satpute (Tennis King)', query: 'Krishna Satpute' },
             { label: 'Bunty Patel (Sixer King)', query: 'Bunty Patel' },
             { label: 'Rinku Singh', query: 'Rinku Singh' },
@@ -279,7 +281,6 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({
             { label: 'Yashasvi Jaiswal', query: 'Yashasvi Jaiswal' },
             { label: 'Sameer Khan (Pace)', query: 'Sameer Khan' },
             { label: 'Pooja Deshmukh (Women XI)', query: 'Pooja Deshmukh' },
-            { label: 'CH-88019', query: 'CH-88019' },
           ].map((chip) => (
             <button
               key={chip.query}
@@ -365,18 +366,18 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({
                     )}
                   </div>
 
-                  {/* New Tournament Entrant Notice (Starts at 0/0) */}
+                  {/* New Tournament Entrant Notice */}
                   {isNewEntrant && (
-                    <div className="mt-3 p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center justify-between">
+                    <div className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
-                        <Flame size={12} className="text-amber-600" />
-                        Tournament Ready: Starts clean at 0/0 for Ball 1!
+                        <Flame size={13} className="text-amber-600" />
+                        Have existing CricHeroes stats?
                       </span>
                       <button
                         onClick={() => openEditModal(raw)}
-                        className="text-amber-700 hover:text-amber-900 underline text-[10px] font-black"
+                        className="px-2.5 py-1 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-[11px] transition-all shadow-sm"
                       >
-                        Enter Past Stats
+                        ⚡ Enter Real CricHeroes Stats
                       </button>
                     </div>
                   )}

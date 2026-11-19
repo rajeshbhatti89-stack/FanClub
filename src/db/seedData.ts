@@ -171,6 +171,53 @@ const makeFormat = (
 });
 
 export const SEED_PLAYERS: Player[] = [
+  // 0. Rajesh Bhatti (Tournament Director & Grassroots Legend)
+  {
+    id: 'ply-rb-99',
+    fanClubId: 'FC-IND-89001',
+    name: 'Rajesh Bhatti',
+    fullName: 'R. S. Bhatti (Rajesh Bhatti)',
+    displayName: 'Rajesh Bhatti',
+    country: 'India',
+    state: 'Punjab',
+    city: 'Amritsar',
+    nationality: 'Indian',
+    dateOfBirth: '1989-08-14',
+    age: 37,
+    role: 'allrounder',
+    battingStyle: 'RHB',
+    bowlingStyle: 'Right-arm Fast',
+    jerseyNumber: 89,
+    currentTeam: 'Royal Strikers XI',
+    teams: ['Sr dcm adi (drm)', 'Amritsar Cricket Club', 'Royal Strikers XI'],
+    isVerified: true,
+    verificationStatus: 'verified',
+    isInternational: false,
+    isDomestic: true,
+    isLocalClub: true,
+    cricheroesId: 'CH-BHATTI-01',
+    externalProviderIds: { cricHeroes: 'CH-BHATTI-01' },
+    dataProvenance: {
+      source: 'cricHeroes',
+      importedAt: '2026-11-01T10:00:00Z',
+      licenseAttribution: 'Verified CricHeroes Player Profile',
+    },
+    overallStats: makeFormat(240, 1540, 86, 24.8, 128.5, 0, 8, 213, 6.4, '5/18'),
+    statsByFormat: {
+      t20: makeFormat(180, 1150, 86, 25.2, 134.0, 0, 6, 162, 6.5, '5/18'),
+      domestic: makeFormat(60, 390, 54, 23.4, 115.0, 0, 2, 51, 6.2, '4/14'),
+    },
+    achievements: [
+      { id: 'ach-rb-1', title: '200+ Career Wickets Milestone', date: '2024', tournament: 'Punjab Club Championship', description: 'Crossed 200 club wickets on CricHeroes.', badgeIcon: 'Trophy' },
+      { id: 'ach-rb-2', title: 'Best Bowling 5/18', date: '2023', tournament: 'Inter Dept Series', description: 'Five-wicket haul in crucial tournament match.', badgeIcon: 'Award' },
+    ],
+    careerHistory: [
+      { year: 2021, team: 'Sr dcm adi (drm)', tournament: 'Inter Dept Series', role: 'All-Rounder', runs: 320, wickets: 34, highlights: 'Leading wicket taker' },
+      { year: 2024, team: 'Amritsar CC', tournament: 'Club Trophy', role: 'All-Rounder', runs: 280, wickets: 28, highlights: 'Tournament Semi-finalist' },
+    ],
+    followerCount: 3840,
+  },
+
   // 1. Virat Kohli
   {
     id: 'ply-vk-18',
