@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cricHeroesMigrationEngine } from '../../services/cricHeroesMigration';
 import { db } from '../../db/database';
+import { CricHeroesPlayerLookup } from './CricHeroesPlayerLookup';
 import type { 
   CricHeroesMigrationJob, 
   CricHeroesDuplicateCandidate, 
@@ -38,7 +39,7 @@ export const CricHeroesMigrationCenter: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [csvInput, setCsvInput] = useState('');
   const [jsonInput, setJsonInput] = useState('');
-  const [importMode, setImportMode] = useState<'csv' | 'json' | 'api' | 'sample'>('sample');
+  const [importMode, setImportMode] = useState<'lookup' | 'sample' | 'csv' | 'json' | 'api'>('lookup');
   const [duplicateCandidates, setDuplicateCandidates] = useState<CricHeroesDuplicateCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<CricHeroesDuplicateCandidate | null>(null);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
@@ -354,8 +355,9 @@ export const CricHeroesMigrationCenter: React.FC = () => {
         {/* Left Column: Import Engine Controls */}
         <div className="lg:col-span-2 space-y-6">
           {/* Mode Switcher */}
-          <div className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl flex-wrap">
             {[
+              { id: 'lookup', label: '🔍 Search by ID / Name', highlight: true },
               { id: 'sample', label: '1-Click Sample' },
               { id: 'csv', label: 'CSV Bulk Upload' },
               { id: 'json', label: 'JSON Dataset' },
@@ -364,9 +366,13 @@ export const CricHeroesMigrationCenter: React.FC = () => {
               <button
                 key={m.id}
                 onClick={() => setImportMode(m.id as any)}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl whitespace-nowrap transition-all ${
                   importMode === m.id
-                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black'
+                    ? m.highlight
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                      : 'bg-emerald-500 text-slate-950 shadow-md font-black'
+                    : m.highlight
+                    ? 'text-amber-400 hover:text-amber-300 font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -374,6 +380,11 @@ export const CricHeroesMigrationCenter: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Mode Content: Live Lookup */}
+          {importMode === 'lookup' && (
+            <CricHeroesPlayerLookup />
+          )}
 
           {/* Mode Content: Sample */}
           {importMode === 'sample' && (

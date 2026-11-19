@@ -18,10 +18,12 @@ import {
   QrCode, 
   ChevronRight, 
   Globe2, 
-  Sparkles,
-  ShieldAlert,
-  ArrowUpDown
+  Sparkles, 
+  ShieldAlert, 
+  ArrowUpDown,
+  X
 } from 'lucide-react';
+import { CricHeroesPlayerLookup } from '../migration/CricHeroesPlayerLookup';
 
 interface PlayerDatabaseViewProps {
   onNavigateToGrassroots?: () => void;
@@ -38,6 +40,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isChSearchModalOpen, setIsChSearchModalOpen] = useState(false);
 
   // Compare mode state
   const [isCompareMode, setIsCompareMode] = useState(false);
@@ -124,6 +127,14 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsChSearchModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 text-xs font-black transition-all shadow-md shadow-amber-500/20 active:scale-95"
+          >
+            <Search size={14} />
+            <span>🔍 Search CricHeroes (ID / Name)</span>
+          </button>
+
           {onNavigateToGrassroots && (
             <button
               onClick={onNavigateToGrassroots}
@@ -465,6 +476,21 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
           playerB={compareList[1]}
           onClose={() => setShowComparisonModal(false)}
         />
+      )}
+
+      {/* CricHeroes Live Search & Import Modal */}
+      {isChSearchModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md p-4 sm:p-6 animate-in fade-in flex items-center justify-center">
+          <div className="w-full max-w-4xl relative bg-slate-900 border border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIsChSearchModalOpen(false)}
+              className="absolute top-6 right-6 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700"
+            >
+              <X size={16} />
+            </button>
+            <CricHeroesPlayerLookup />
+          </div>
+        </div>
       )}
     </div>
   );
