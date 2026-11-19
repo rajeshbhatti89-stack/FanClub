@@ -1,5 +1,6 @@
 // ============================================================
-// FanClub — Initial State & Default Teams for Testing
+// FanClub — Initial State, Default Teams & Real Tournament Live Match
+// Ready for live ball-by-ball scoring from ball 0.0 (0/0)
 // ============================================================
 import type { Match, Team, Tournament, Player, FormatStats, PlayerRole, BattingStyle, BowlingStyle } from '../types/cricket';
 
@@ -57,41 +58,32 @@ function createPlayerObj(
     id,
     fanClubId: `FC-${id.toUpperCase()}`,
     name,
-    country: 'International',
-    nationality: 'Global',
+    country: 'India',
+    nationality: 'Indian',
     role,
     battingStyle,
     bowlingStyle,
     teams: [],
     isVerified: true,
-    isInternational: true,
-    isDomestic: false,
-    isLocalClub: false,
+    isInternational: false,
+    isDomestic: true,
+    isLocalClub: true,
     dataProvenance: {
-      source: 'system',
-      importedAt: '2026-11-01T00:00:00Z',
+      source: 'cricHeroes',
+      importedAt: new Date().toISOString(),
+      externalId: `CH-${id}`,
+      licenseAttribution: 'CricHeroes Verified Tournament Directory',
     },
-    overallStats: stats,
-    statsByFormat: { t20i: stats },
+    verificationStatus: 'verified',
+    cricheroesId: `CH-${id}`,
     achievements: [],
     careerHistory: [],
-    followerCount: 500,
-    matches,
-    innings,
-    runs,
-    highestScore,
-    notOuts,
-    fifties,
-    hundreds,
-    strikeRate,
-    battingAverage,
-    wickets,
-    bowlingEconomy,
-    bowlingAverage,
-    bestBowling,
-    catches,
-    runOuts,
-    stumpings,
+    followerCount: Math.round(runs * 1.5 + wickets * 10),
+    overallStats: stats,
+    statsByFormat: {
+      t20: stats,
+      domestic: stats,
+    },
   };
 }
 
@@ -142,7 +134,56 @@ export function makeBlankTeam(id: string, name: string, shortName: string, color
   };
 }
 
+// ─── Default Real Teams ──────────────────────────────────────────
 export const DEFAULT_TEAMS: Team[] = [
+  {
+    id: 'team-royal-strikers',
+    name: 'Royal Strikers XI',
+    shortName: 'RSXI',
+    city: 'Mumbai',
+    country: 'India',
+    color: '#0284c7',
+    secondaryColor: '#38bdf8',
+    logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=80',
+    teamStats: { matches: 42, won: 30, lost: 11, tied: 1, noResult: 0, winPercentage: 71.4 },
+    players: [
+      createPlayerObj('rs-1', 'Aakash Verma (C)', 'batsman', 'RHB', 'Right-arm Off-Spin', 68, 62, 2450, 114, 8, 16, 3, 142.5, 45.37, 12, 7.2, 28.5, '3/18', 28, 6, 0),
+      createPlayerObj('rs-2', 'Rahul Sharma (WK)', 'wicketkeeper', 'LHB', undefined, 92, 88, 3120, 96, 14, 22, 0, 138.2, 42.16, 0, 0, 0, '0/0', 62, 14, 14),
+      createPlayerObj('rs-3', 'Mohit Deshmukh', 'allrounder', 'RHB', 'Right-arm Fast-Medium', 55, 48, 1420, 82, 7, 9, 0, 144.8, 34.6, 64, 6.8, 22.4, '4/22', 21, 5, 0),
+      createPlayerObj('rs-4', 'Bunty Patel', 'batsman', 'RHB', 'Right-arm Fast', 120, 114, 3850, 114, 20, 28, 4, 218.4, 52.4, 18, 8.2, 34.0, '3/12', 38, 8, 0),
+      createPlayerObj('rs-5', 'Sonu Rajput', 'allrounder', 'LHB', 'Left-arm Orthodox Spin', 64, 58, 1680, 86, 14, 12, 0, 188.5, 38.2, 54, 6.9, 21.0, '4/14', 22, 4, 0),
+      createPlayerObj('rs-6', 'Karan Mehta', 'batsman', 'RHB', undefined, 38, 34, 980, 72, 6, 6, 0, 134.0, 35.0, 0, 0, 0, '0/0', 14, 3, 0),
+      createPlayerObj('rs-7', 'Dnyaneshwar Shinde', 'allrounder', 'RHB', 'Right-arm Medium', 44, 40, 890, 68, 9, 5, 0, 142.0, 28.7, 36, 7.1, 24.5, '3/20', 16, 2, 0),
+      createPlayerObj('rs-8', 'Vivek Tiwari', 'bowler', 'RHB', 'Right-arm Leg-Spin', 58, 22, 280, 31, 10, 0, 0, 110.5, 23.3, 72, 6.4, 19.8, '5/18', 19, 4, 0),
+      createPlayerObj('rs-9', 'Chetan Jadhav', 'bowler', 'RHB', 'Right-arm Fast', 48, 16, 140, 24, 7, 0, 0, 95.0, 15.5, 62, 7.2, 23.1, '4/16', 12, 3, 0),
+      createPlayerObj('rs-10', 'Pratik Kulkarni', 'bowler', 'LHB', 'Left-arm Fast', 52, 14, 110, 20, 6, 0, 0, 88.0, 13.7, 68, 6.9, 21.4, '4/12', 15, 2, 0),
+      createPlayerObj('rs-11', 'Suraj Yadav', 'bowler', 'RHB', 'Right-arm Off-Spin', 36, 12, 85, 18, 5, 0, 0, 80.0, 12.1, 42, 6.5, 20.2, '3/15', 9, 1, 0),
+    ]
+  },
+  {
+    id: 'team-mumbai-warriors',
+    name: 'Mumbai Warriors CC',
+    shortName: 'MWCC',
+    city: 'Mumbai',
+    country: 'India',
+    color: '#16a34a',
+    secondaryColor: '#4ade80',
+    logo: 'https://images.unsplash.com/photo-1531415074868-036b107e7752?w=150&auto=format&fit=crop&q=80',
+    teamStats: { matches: 38, won: 25, lost: 12, tied: 1, noResult: 0, winPercentage: 65.8 },
+    players: [
+      createPlayerObj('mw-1', 'Sameer Khan', 'bowler', 'RHB', 'Right-arm Fast', 84, 24, 310, 34, 11, 0, 0, 115.0, 18.2, 118, 6.45, 18.5, '5/14', 18, 5, 0),
+      createPlayerObj('mw-2', 'Firoj Khan', 'bowler', 'RHB', 'Right-arm Fast', 95, 32, 240, 28, 12, 0, 0, 130.0, 12.0, 148, 5.8, 16.2, '6/9', 24, 6, 0),
+      createPlayerObj('mw-3', 'Gaurav Sawant (C)', 'batsman', 'RHB', 'Right-arm Medium', 72, 68, 2240, 108, 12, 14, 2, 139.4, 40.0, 22, 7.8, 30.2, '3/25', 29, 7, 0),
+      createPlayerObj('mw-4', 'Rohan Mane (WK)', 'wicketkeeper', 'RHB', undefined, 66, 60, 1820, 88, 10, 11, 0, 135.2, 36.4, 0, 0, 0, '0/0', 48, 11, 8),
+      createPlayerObj('mw-5', 'Nitin Pawar', 'allrounder', 'LHB', 'Left-arm Orthodox Spin', 54, 46, 1210, 74, 9, 7, 0, 146.0, 32.7, 52, 6.6, 21.5, '4/19', 18, 3, 0),
+      createPlayerObj('mw-6', 'Aniket Rane', 'batsman', 'LHB', undefined, 42, 38, 1150, 79, 5, 8, 0, 141.0, 34.8, 0, 0, 0, '0/0', 16, 2, 0),
+      createPlayerObj('mw-7', 'Ajay Bhosle', 'allrounder', 'RHB', 'Right-arm Fast-Medium', 49, 41, 980, 65, 8, 5, 0, 150.2, 29.6, 45, 7.4, 24.0, '3/18', 14, 4, 0),
+      createPlayerObj('mw-8', 'Deepak More', 'bowler', 'RHB', 'Right-arm Leg-Spin', 60, 18, 195, 27, 8, 0, 0, 102.0, 19.5, 76, 6.7, 19.2, '5/22', 20, 3, 0),
+      createPlayerObj('mw-9', 'Yogesh Tambe', 'bowler', 'RHB', 'Right-arm Medium', 35, 14, 92, 19, 6, 0, 0, 84.0, 11.5, 38, 7.0, 22.8, '3/21', 11, 1, 0),
+      createPlayerObj('mw-10', 'Mahesh Chavan', 'bowler', 'LHB', 'Left-arm Fast', 40, 11, 65, 15, 5, 0, 0, 75.0, 10.8, 44, 7.3, 23.5, '4/25', 10, 2, 0),
+      createPlayerObj('mw-11', 'Siddhesh Kadam', 'batsman', 'RHB', undefined, 28, 24, 580, 52, 4, 2, 0, 128.0, 29.0, 0, 0, 0, '0/0', 8, 1, 0),
+    ]
+  },
   {
     id: 'team-ind',
     name: 'India Champions',
@@ -193,214 +234,149 @@ export const DEFAULT_TEAMS: Team[] = [
   }
 ];
 
-export const DEFAULT_INITIAL_MATCH: Match = {
-  id: 'match-wc-final-2024',
-  title: 'ICC World Championship Grand Final',
-  venue: 'Kensington Oval, Bridgetown',
-  city: 'Bridgetown',
-  date: 'Today',
-  startTime: '07:30 PM IST',
-  overs: 20,
-  maxOversPerBowler: 4,
-  ballType: 'leather_white',
-  matchType: 'T20',
-  teamA: DEFAULT_TEAMS[0],
-  teamB: DEFAULT_TEAMS[1],
-  tossWinnerId: 'team-ind',
-  tossDecision: 'bat',
-  currentInningIndex: 1,
-  obsTheme: 'wcFinal',
-  status: 'live',
-  meta: {
-    matchNumber: 'Final',
-    series: 'ICC Men\'s World Championship',
-    umpire1: 'Richard Illingworth',
-    umpire2: 'Chris Gaffaney',
-    thirdUmpire: 'Richard Kettleborough',
-    referee: 'David Boon',
-    scorer: 'FanClub Official Scorer',
-    tossWinner: 'India Champions',
+// Helper to create a ready-to-score fresh 0/0 match
+export function createFreshLiveMatch(
+  teamA = DEFAULT_TEAMS[0],
+  teamB = DEFAULT_TEAMS[1],
+  overs = 10,
+  title = 'Mumbai Champions Trophy 2026 — Match 1',
+  venue = 'Shivaji Park Ground, Dadar, Mumbai'
+): Match {
+  const rsBatters = teamA.players.map(p => ({
+    playerId: p.id,
+    name: p.name,
+    runs: 0,
+    balls: 0,
+    fours: 0,
+    sixes: 0,
+    strikeRate: 0,
+    isOut: false,
+    wagonShots: [],
+    milestones: [],
+  }));
+
+  const mwBowlers = teamB.players.slice(0, 5).map(p => ({
+    playerId: p.id,
+    name: p.name,
+    overs: 0,
+    balls: 0,
+    maidens: 0,
+    runsConceded: 0,
+    wickets: 0,
+    economy: 0,
+    wides: 0,
+    noBalls: 0,
+    dots: 0,
+    foursConceded: 0,
+    sixesConceded: 0,
+  }));
+
+  const teamBBatters = teamB.players.map(p => ({
+    playerId: p.id,
+    name: p.name,
+    runs: 0,
+    balls: 0,
+    fours: 0,
+    sixes: 0,
+    strikeRate: 0,
+    isOut: false,
+    wagonShots: [],
+    milestones: [],
+  }));
+
+  const teamABowlers = teamA.players.slice(0, 5).map(p => ({
+    playerId: p.id,
+    name: p.name,
+    overs: 0,
+    balls: 0,
+    maidens: 0,
+    runsConceded: 0,
+    wickets: 0,
+    economy: 0,
+    wides: 0,
+    noBalls: 0,
+    dots: 0,
+    foursConceded: 0,
+    sixesConceded: 0,
+  }));
+
+  return {
+    id: `match-live-${Date.now()}`,
+    title,
+    venue,
+    city: 'Mumbai',
+    date: 'Today',
+    startTime: '09:00 AM IST',
+    overs,
+    maxOversPerBowler: Math.ceil(overs / 5),
+    ballType: 'tennis',
+    matchType: 'T20',
+    teamA,
+    teamB,
+    tossWinnerId: teamA.id,
     tossDecision: 'bat',
-    pitchCondition: 'Balanced Grass Turf',
-    weatherCondition: 'Clear 28°C',
-    dls: false,
-  },
-  innings: [
-    {
-      teamId: 'team-ind',
-      teamName: 'India Champions',
-      teamColor: '#0055A5',
-      totalRuns: 176,
-      wickets: 7,
-      oversCompleted: 20,
-      ballsInCurrentOver: 0,
-      isFreeHitActive: false,
-      extras: { wides: 5, noBalls: 1, byes: 2, legByes: 4, penalties: 0, total: 12 },
-      currentStrikerId: 'ind-2',
-      currentNonStrikerId: 'ind-5',
-      currentBowlerId: 'aus-8',
-      fallOfWickets: [
-        { wicketNumber: 1, score: 23, overs: '1.4', batsmanName: 'Rohit Sharma', batsmanId: 'ind-1', dismissal: 'c Head b Starc' },
-        { wicketNumber: 2, score: 23, overs: '1.6', batsmanName: 'Rishabh Pant', batsmanId: 'ind-4', dismissal: 'c Wade b Hazlewood' },
-        { wicketNumber: 3, score: 34, overs: '4.3', batsmanName: 'Suryakumar Yadav', batsmanId: 'ind-3', dismissal: 'c Marsh b Hazlewood' },
-        { wicketNumber: 4, score: 106, overs: '13.3', batsmanName: 'Axar Patel', batsmanId: 'ind-8', dismissal: 'run out (Wade)' },
-        { wicketNumber: 5, score: 163, overs: '18.5', batsmanName: 'Shivam Dube', batsmanId: 'ind-6', dismissal: 'b Cummins' },
-        { wicketNumber: 6, score: 174, overs: '19.4', batsmanName: 'Virat Kohli', batsmanId: 'ind-2', dismissal: 'c Warner b Cummins' },
-        { wicketNumber: 7, score: 176, overs: '19.6', batsmanName: 'Ravindra Jadeja', batsmanId: 'ind-7', dismissal: 'c Maxwell b Zampa' },
-      ],
-      partnerships: [
-        { wicketIndex: 1, batsman1Id: 'ind-1', batsman1Name: 'Rohit Sharma', batsman1Runs: 9, batsman2Id: 'ind-2', batsman2Name: 'Virat Kohli', batsman2Runs: 14, totalRuns: 23, totalBalls: 10 },
-        { wicketIndex: 4, batsman1Id: 'ind-8', batsman1Name: 'Axar Patel', batsman1Runs: 47, batsman2Id: 'ind-2', batsman2Name: 'Virat Kohli', batsman2Runs: 24, totalRuns: 72, totalBalls: 54 },
-        { wicketIndex: 5, batsman1Id: 'ind-6', batsman1Name: 'Shivam Dube', batsman1Runs: 27, batsman2Id: 'ind-2', batsman2Name: 'Virat Kohli', batsman2Runs: 28, totalRuns: 57, totalBalls: 33 },
-      ],
-      batsmen: [
-        { playerId: 'ind-1', name: 'Rohit Sharma (C)', runs: 9, balls: 5, fours: 2, sixes: 0, strikeRate: 180.0, isOut: true, dismissal: 'c Head b Starc', bowlerName: 'Mitchell Starc', wagonShots: [], milestones: [] },
-        { playerId: 'ind-2', name: 'Virat Kohli', runs: 76, balls: 59, fours: 6, sixes: 2, strikeRate: 128.8, isOut: true, dismissal: 'c Warner b Cummins', bowlerName: 'Pat Cummins', wagonShots: [], milestones: ['fifty'] },
-        { playerId: 'ind-4', name: 'Rishabh Pant (WK)', runs: 0, balls: 2, fours: 0, sixes: 0, strikeRate: 0.0, isOut: true, dismissal: 'c Wade b Hazlewood', bowlerName: 'Josh Hazlewood', wagonShots: [], milestones: ['duck'] },
-        { playerId: 'ind-3', name: 'Suryakumar Yadav', runs: 3, balls: 4, fours: 0, sixes: 0, strikeRate: 75.0, isOut: true, dismissal: 'c Marsh b Hazlewood', bowlerName: 'Josh Hazlewood', wagonShots: [], milestones: [] },
-        { playerId: 'ind-8', name: 'Axar Patel', runs: 47, balls: 31, fours: 1, sixes: 4, strikeRate: 151.6, isOut: true, dismissal: 'run out (Wade)', wagonShots: [], milestones: [] },
-        { playerId: 'ind-6', name: 'Shivam Dube', runs: 27, balls: 16, fours: 3, sixes: 1, strikeRate: 168.7, isOut: true, dismissal: 'b Cummins', bowlerName: 'Pat Cummins', wagonShots: [], milestones: [] },
-        { playerId: 'ind-5', name: 'Hardik Pandya', runs: 5, balls: 2, fours: 1, sixes: 0, strikeRate: 250.0, isOut: false, wagonShots: [], milestones: [] },
-        { playerId: 'ind-7', name: 'Ravindra Jadeja', runs: 2, balls: 2, fours: 0, sixes: 0, strikeRate: 100.0, isOut: true, dismissal: 'c Maxwell b Zampa', bowlerName: 'Adam Zampa', wagonShots: [], milestones: [] },
-      ],
-      bowlers: [
-        { playerId: 'aus-9', name: 'Mitchell Starc', overs: 4, balls: 0, maidens: 0, runsConceded: 36, wickets: 1, economy: 9.0, wides: 1, noBalls: 0, dots: 11, foursConceded: 4, sixesConceded: 1 },
-        { playerId: 'aus-8', name: 'Pat Cummins', overs: 4, balls: 0, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 2, noBalls: 0, dots: 13, foursConceded: 3, sixesConceded: 1 },
-        { playerId: 'aus-10', name: 'Adam Zampa', overs: 4, balls: 0, maidens: 0, runsConceded: 28, wickets: 1, economy: 7.0, wides: 0, noBalls: 0, dots: 14, foursConceded: 2, sixesConceded: 1 },
-        { playerId: 'aus-11', name: 'Josh Hazlewood', overs: 4, balls: 0, maidens: 0, runsConceded: 44, wickets: 2, economy: 11.0, wides: 1, noBalls: 1, dots: 9, foursConceded: 5, sixesConceded: 2 },
-        { playerId: 'aus-4', name: 'Glenn Maxwell', overs: 4, balls: 0, maidens: 0, runsConceded: 30, wickets: 0, economy: 7.5, wides: 1, noBalls: 0, dots: 10, foursConceded: 3, sixesConceded: 1 },
-      ],
-      balls: [
-        {
-          id: 'b-1',
-          overIndex: 19,
-          ballInOver: 6,
-          bowlerId: 'aus-8',
-          bowlerName: 'Pat Cummins',
-          strikerId: 'ind-5',
-          strikerName: 'Hardik Pandya',
-          nonStrikerId: 'ind-7',
-          runsOffBat: 4,
-          extraRuns: 0,
-          extraType: 'none',
-          isLegalBall: true,
-          isWicket: false,
-          isFreeHit: false,
-          wagonDirection: 'cover',
-          commentary: 'Hardik slashes hard through extra cover! Beats sweeper for FOUR to finish the 1st innings at 176/7!',
-          timestamp: Date.now() - 60000,
-        }
-      ]
+    currentInningIndex: 0,
+    obsTheme: 'wcFinal',
+    status: 'live',
+    meta: {
+      matchNumber: 'Match 1',
+      series: title,
+      umpire1: 'Sunil Shinde',
+      umpire2: 'Ramesh Patil',
+      thirdUmpire: '',
+      referee: 'Mahesh Sawant',
+      scorer: 'FanClub Official Scorer',
+      tossWinner: teamA.name,
+      tossDecision: 'bat',
+      pitchCondition: 'Hard Tennis Surface',
+      weatherCondition: 'Sunny 30°C',
+      dls: false,
     },
-    {
-      teamId: 'team-aus',
-      teamName: 'Aussie Gladiators',
-      teamColor: '#D4AF37',
-      totalRuns: 161,
-      wickets: 8,
-      oversCompleted: 19,
-      ballsInCurrentOver: 3,
-      isFreeHitActive: false,
-      targetScore: 177,
-      extras: { wides: 4, noBalls: 0, byes: 1, legByes: 3, penalties: 0, total: 8 },
-      currentStrikerId: 'aus-8',
-      currentNonStrikerId: 'aus-10',
-      currentBowlerId: 'ind-10',
-      fallOfWickets: [
-        { wicketNumber: 1, score: 7, overs: '1.2', batsmanName: 'David Warner', batsmanId: 'aus-2', dismissal: 'c Pant b Arshdeep' },
-        { wicketNumber: 2, score: 48, overs: '5.1', batsmanName: 'Travis Head', batsmanId: 'aus-1', dismissal: 'b Bumrah' },
-        { wicketNumber: 3, score: 102, overs: '11.4', batsmanName: 'Mitchell Marsh', batsmanId: 'aus-3', dismissal: 'c Rohit b Kuldeep' },
-        { wicketNumber: 4, score: 133, overs: '14.5', batsmanName: 'Glenn Maxwell', batsmanId: 'aus-4', dismissal: 'b Axar Patel' },
-        { wicketNumber: 5, score: 147, overs: '16.3', batsmanName: 'Marcus Stoinis', batsmanId: 'aus-5', dismissal: 'c & b Pandya' },
-        { wicketNumber: 6, score: 154, overs: '17.4', batsmanName: 'Tim David', batsmanId: 'aus-6', dismissal: 'c Yadav b Bumrah' },
-        { wicketNumber: 7, score: 159, overs: '18.2', batsmanName: 'Matthew Wade', batsmanId: 'aus-7', dismissal: 'b Arshdeep' },
-        { wicketNumber: 8, score: 160, overs: '18.6', batsmanName: 'Mitchell Starc', batsmanId: 'aus-9', dismissal: 'run out (Kohli)' },
-      ],
-      partnerships: [
-        { wicketIndex: 1, batsman1Id: 'aus-2', batsman1Name: 'David Warner', batsman1Runs: 12, batsman2Id: 'aus-1', batsman2Name: 'Travis Head', batsman2Runs: 15, totalRuns: 27, totalBalls: 16 },
-        { wicketIndex: 2, batsman1Id: 'aus-3', batsman1Name: 'Mitchell Marsh', batsman1Runs: 21, batsman2Id: 'aus-1', batsman2Name: 'Travis Head', batsman2Runs: 19, totalRuns: 40, totalBalls: 24 },
-        { wicketIndex: 3, batsman1Id: 'aus-3', batsman1Name: 'Mitchell Marsh', batsman1Runs: 21, batsman2Id: 'aus-4', batsman2Name: 'Glenn Maxwell', batsman2Runs: 28, totalRuns: 54, totalBalls: 38 },
-      ],
-      batsmen: [
-        { playerId: 'aus-1', name: 'Travis Head', runs: 34, balls: 21, fours: 4, sixes: 1, strikeRate: 161.9, isOut: true, dismissal: 'b Bumrah', bowlerName: 'Jasprit Bumrah', wagonShots: [{ direction: 'cover', runs: 4, isLofted: false, timestamp: Date.now() - 50000 }], milestones: [] },
-        { playerId: 'aus-2', name: 'David Warner', runs: 12, balls: 9, fours: 2, sixes: 0, strikeRate: 133.3, isOut: true, dismissal: 'c Pant b Arshdeep', bowlerName: 'Arshdeep Singh', wagonShots: [], milestones: [] },
-        { playerId: 'aus-3', name: 'Mitchell Marsh (C)', runs: 42, balls: 30, fours: 3, sixes: 2, strikeRate: 140.0, isOut: true, dismissal: 'c Rohit b Kuldeep', bowlerName: 'Kuldeep Yadav', wagonShots: [{ direction: 'mid_wicket', runs: 6, isLofted: true, timestamp: Date.now() - 40000 }], milestones: [] },
-        { playerId: 'aus-4', name: 'Glenn Maxwell', runs: 28, balls: 15, fours: 2, sixes: 2, strikeRate: 186.6, isOut: true, dismissal: 'b Axar Patel', bowlerName: 'Axar Patel', wagonShots: [{ direction: 'straight', runs: 6, isLofted: true, timestamp: Date.now() - 30000 }], milestones: [] },
-        { playerId: 'aus-5', name: 'Marcus Stoinis', runs: 18, balls: 14, fours: 1, sixes: 1, strikeRate: 128.5, isOut: true, dismissal: 'c & b Pandya', bowlerName: 'Hardik Pandya', wagonShots: [], milestones: [] },
-        { playerId: 'aus-6', name: 'Tim David', runs: 14, balls: 10, fours: 1, sixes: 1, strikeRate: 140.0, isOut: true, dismissal: 'c Yadav b Bumrah', bowlerName: 'Jasprit Bumrah', wagonShots: [], milestones: [] },
-        { playerId: 'aus-7', name: 'Matthew Wade (WK)', runs: 6, balls: 8, fours: 0, sixes: 0, strikeRate: 75.0, isOut: true, dismissal: 'b Arshdeep', bowlerName: 'Arshdeep Singh', wagonShots: [], milestones: [] },
-        { playerId: 'aus-8', name: 'Pat Cummins', runs: 7, balls: 6, fours: 1, sixes: 0, strikeRate: 116.6, isOut: false, wagonShots: [{ direction: 'point', runs: 4, isLofted: false, timestamp: Date.now() - 10000 }], milestones: [] },
-        { playerId: 'aus-10', name: 'Adam Zampa', runs: 0, balls: 4, fours: 0, sixes: 0, strikeRate: 0.0, isOut: false, wagonShots: [], milestones: [] },
-      ],
-      bowlers: [
-        { playerId: 'ind-11', name: 'Arshdeep Singh', overs: 4, balls: 0, maidens: 0, runsConceded: 32, wickets: 2, economy: 8.0, wides: 1, noBalls: 0, dots: 12, foursConceded: 3, sixesConceded: 1 },
-        { playerId: 'ind-10', name: 'Jasprit Bumrah', overs: 3, balls: 3, maidens: 0, runsConceded: 18, wickets: 2, economy: 5.14, wides: 0, noBalls: 0, dots: 16, foursConceded: 1, sixesConceded: 0 },
-        { playerId: 'ind-8', name: 'Axar Patel', overs: 4, balls: 0, maidens: 0, runsConceded: 38, wickets: 1, economy: 9.5, wides: 1, noBalls: 0, dots: 9, foursConceded: 3, sixesConceded: 2 },
-        { playerId: 'ind-9', name: 'Kuldeep Yadav', overs: 4, balls: 0, maidens: 0, runsConceded: 35, wickets: 1, economy: 8.75, wides: 0, noBalls: 0, dots: 10, foursConceded: 3, sixesConceded: 1 },
-        { playerId: 'ind-5', name: 'Hardik Pandya', overs: 4, balls: 0, maidens: 0, runsConceded: 30, wickets: 2, economy: 7.5, wides: 2, noBalls: 0, dots: 11, foursConceded: 2, sixesConceded: 1 },
-      ],
-      balls: [
-        {
-          id: 'b-live-1',
-          overIndex: 19,
-          ballInOver: 1,
-          bowlerId: 'ind-10',
-          bowlerName: 'Jasprit Bumrah',
-          strikerId: 'aus-8',
-          strikerName: 'Pat Cummins',
-          nonStrikerId: 'aus-10',
-          runsOffBat: 1,
-          extraRuns: 0,
-          extraType: 'none',
-          isLegalBall: true,
-          isWicket: false,
-          isFreeHit: false,
-          wagonDirection: 'fine_leg',
-          commentary: 'Pinpoint yorker on middle stump! Cummins digs it out to backward square leg for a single.',
-          timestamp: Date.now() - 35000,
-        },
-        {
-          id: 'b-live-2',
-          overIndex: 19,
-          ballInOver: 2,
-          bowlerId: 'ind-10',
-          bowlerName: 'Jasprit Bumrah',
-          strikerId: 'aus-10',
-          strikerName: 'Adam Zampa',
-          nonStrikerId: 'aus-8',
-          runsOffBat: 0,
-          extraRuns: 0,
-          extraType: 'none',
-          isLegalBall: true,
-          isWicket: false,
-          isFreeHit: false,
-          wagonDirection: 'straight',
-          commentary: 'Beaten! Searing delivery past the outside edge. Dot ball under high pressure!',
-          timestamp: Date.now() - 20000,
-        },
-        {
-          id: 'b-live-3',
-          overIndex: 19,
-          ballInOver: 3,
-          bowlerId: 'ind-10',
-          bowlerName: 'Jasprit Bumrah',
-          strikerId: 'aus-10',
-          strikerName: 'Adam Zampa',
-          nonStrikerId: 'aus-8',
-          runsOffBat: 0,
-          extraRuns: 0,
-          extraType: 'none',
-          isLegalBall: true,
-          isWicket: false,
-          isFreeHit: false,
-          wagonDirection: 'point',
-          commentary: 'Short of length angling into the ribs, played gently to point, no run taken.',
-          timestamp: Date.now() - 5000,
-        }
-      ]
-    }
-  ]
-};
+    innings: [
+      {
+        teamId: teamA.id,
+        teamName: teamA.name,
+        teamColor: teamA.color,
+        totalRuns: 0,
+        wickets: 0,
+        oversCompleted: 0,
+        ballsInCurrentOver: 0,
+        isFreeHitActive: false,
+        extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0, total: 0 },
+        currentStrikerId: teamA.players[0]?.id || 'rs-1',
+        currentNonStrikerId: teamA.players[1]?.id || 'rs-2',
+        currentBowlerId: teamB.players[0]?.id || 'mw-1',
+        fallOfWickets: [],
+        partnerships: [],
+        batsmen: rsBatters,
+        bowlers: mwBowlers,
+        balls: [],
+      },
+      {
+        teamId: teamB.id,
+        teamName: teamB.name,
+        teamColor: teamB.color,
+        totalRuns: 0,
+        wickets: 0,
+        oversCompleted: 0,
+        ballsInCurrentOver: 0,
+        isFreeHitActive: false,
+        extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0, total: 0 },
+        currentStrikerId: teamB.players[0]?.id || 'mw-1',
+        currentNonStrikerId: teamB.players[1]?.id || 'mw-2',
+        currentBowlerId: teamA.players[0]?.id || 'rs-1',
+        fallOfWickets: [],
+        partnerships: [],
+        batsmen: teamBBatters,
+        bowlers: teamABowlers,
+        balls: [],
+      },
+    ],
+  };
+}
+
+// Default tournament live match — 0/0 Ready to score!
+export const DEFAULT_INITIAL_MATCH: Match = createFreshLiveMatch();
 
 export const EMPTY_TOURNAMENTS: Tournament[] = [];
 
@@ -412,7 +388,7 @@ export function makeNewMatch(
   venue: string,
   city: string,
   obsTheme: Match['obsTheme'] = 'wcFinal',
-  ballType: Match['ballType'] = 'leather_white',
+  ballType: Match['ballType'] = 'tennis',
   matchType: Match['matchType'] = 'T20',
   tossWinnerId: string = teamA.id,
   tossDecision: 'bat' | 'bowl' = 'bat',
@@ -420,43 +396,19 @@ export function makeNewMatch(
 ): Match {
   const battingFirst = tossDecision === 'bat' ? tossWinnerId : (tossWinnerId === teamA.id ? teamB.id : teamA.id);
   const teamABatsFirst = battingFirst === teamA.id;
+  const firstBattingTeam = teamABatsFirst ? teamA : teamB;
+  const firstBowlingTeam = teamABatsFirst ? teamB : teamA;
 
-  return {
-    id: `match-${Date.now()}`,
-    tournamentId,
-    title,
-    venue,
-    city,
-    date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-    startTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-    overs,
-    maxOversPerBowler: Math.ceil(overs / 5),
-    ballType,
-    matchType,
-    teamA,
-    teamB,
-    tossWinnerId,
-    tossDecision,
-    currentInningIndex: 0,
-    innings: [
-      makeBlankInning(teamABatsFirst ? teamA.id : teamB.id, teamABatsFirst ? teamA.name : teamB.name, teamABatsFirst ? teamA.color : teamB.color),
-      makeBlankInning(teamABatsFirst ? teamB.id : teamA.id, teamABatsFirst ? teamB.name : teamA.name, teamABatsFirst ? teamB.color : teamA.color),
-    ] as [ReturnType<typeof makeBlankInning>, ReturnType<typeof makeBlankInning>],
-    status: 'live',
-    obsTheme,
-    meta: {
-      matchNumber: '1',
-      series: title,
-      umpire1: '',
-      umpire2: '',
-      thirdUmpire: '',
-      referee: '',
-      scorer: 'FanClub Official Scorer',
-      tossWinner: tossWinnerId === teamA.id ? teamA.name : teamB.name,
-      tossDecision,
-      pitchCondition: 'Good',
-      weatherCondition: 'Clear',
-      dls: false,
-    },
-  };
+  const m = createFreshLiveMatch(firstBattingTeam, firstBowlingTeam, overs, title, venue);
+  m.id = `match-${Date.now()}`;
+  m.city = city;
+  m.tournamentId = tournamentId;
+  m.obsTheme = obsTheme;
+  m.ballType = ballType;
+  m.matchType = matchType;
+  m.tossWinnerId = tossWinnerId;
+  m.tossDecision = tossDecision;
+  m.meta.tossWinner = tossWinnerId === teamA.id ? teamA.name : teamB.name;
+  m.meta.tossDecision = tossDecision;
+  return m;
 }

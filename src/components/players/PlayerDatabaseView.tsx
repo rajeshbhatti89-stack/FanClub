@@ -113,16 +113,16 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
   const countries = Array.from(new Set(players.map((p) => p.country))).sort();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-100">
+    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-900">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest uppercase mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black tracking-widest uppercase mb-2">
             <Globe2 size={13} /> WORLDWIDE REGISTRY
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Global Cricket Players</h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Browse international legends, domestic tournament players, and migrated CricHeroes local talents.
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Global Cricket Players</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Browse international legends, domestic tournament players, and auto-synchronized CricHeroes local talents.
           </p>
         </div>
 
@@ -162,8 +162,8 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
             }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-colors ${
               isCompareMode
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black'
-                : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200'
+                ? 'bg-amber-400 text-amber-950 border-amber-500 font-black'
+                : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
             }`}
           >
             <TrendingUp size={14} />
@@ -172,7 +172,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
 
           <button
             onClick={() => exportService.exportPlayersToCsv(players)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-colors shadow-sm"
           >
             <Download size={14} />
             <span>Export CSV</span>
@@ -182,16 +182,16 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
 
       {/* Floating Compare Drawer */}
       {isCompareMode && (
-        <div className="mt-4 p-4 rounded-2xl bg-slate-900 border border-amber-500/40 flex items-center justify-between gap-4 shadow-xl">
+        <div className="mt-4 p-4 rounded-2xl bg-white border border-amber-300 flex items-center justify-between gap-4 shadow-md">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-amber-400 uppercase">Selected for Comparison:</span>
+            <span className="text-xs font-bold text-amber-800 uppercase">Selected for Comparison:</span>
             {compareList.length === 0 ? (
               <span className="text-xs text-slate-500 italic">Select 2 players below</span>
             ) : (
               compareList.map((p) => (
                 <span
                   key={p.id}
-                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs font-semibold text-white flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-900 flex items-center gap-1"
                 >
                   {p.name}
                 </span>
@@ -202,7 +202,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
           <button
             onClick={handleLaunchCompare}
             disabled={compareList.length !== 2}
-            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all disabled:opacity-40"
+            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-all disabled:opacity-40"
           >
             Launch Comparison ({compareList.length}/2)
           </button>
@@ -224,11 +224,11 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
             className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all border ${
               categoryFilter === tab.id
                 ? tab.highlight
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md'
-                  : 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-md'
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-sm'
+                  : 'bg-emerald-600 text-white border-emerald-600 font-black shadow-sm'
                 : tab.highlight
-                ? 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-500/30'
-                : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800'
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
             }`}
           >
             {tab.label}
@@ -246,7 +246,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, CricHeroes ID, city, team..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 shadow-sm font-medium"
           />
         </div>
 
@@ -254,7 +254,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm font-semibold"
         >
           <option value="all">All Playing Roles</option>
           <option value="batsman">Batsmen</option>
@@ -267,7 +267,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
         <select
           value={countryFilter}
           onChange={(e) => setCountryFilter(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm font-semibold"
         >
           <option value="all">All Countries ({countries.length})</option>
           {countries.map((c) => (
@@ -281,7 +281,7 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm font-semibold"
         >
           <option value="all">All Categories</option>
           <option value="unverified">⚡ Unverified Grassroots (Claimable)</option>
@@ -299,9 +299,9 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
       </div>
 
       {/* Players Counter */}
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-400 font-medium px-1">
+      <div className="mt-4 flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
         <span>
-          Showing <strong className="text-white">{filtered.length}</strong> of {players.length} registered players
+          Showing <strong className="text-slate-900 font-bold">{filtered.length}</strong> of {players.length} registered players
         </span>
       </div>
 
@@ -314,17 +314,17 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
           return (
             <div
               key={player.id}
-              className={`p-5 rounded-2xl bg-slate-900/90 border transition-all relative overflow-hidden group ${
+              className={`p-5 rounded-2xl bg-white border transition-all relative overflow-hidden group shadow-sm ${
                 isSelected
-                  ? 'border-amber-400 ring-2 ring-amber-400/20 bg-slate-900'
-                  : 'border-slate-800 hover:border-slate-700 hover:shadow-xl'
+                  ? 'border-amber-400 ring-2 ring-amber-400/30 bg-amber-50/20'
+                  : 'border-slate-200 hover:border-emerald-500 hover:shadow-md'
               }`}
             >
               <div className="flex items-start gap-4">
                 {/* Avatar */}
                 <div
                   onClick={() => setSelectedPlayer(player)}
-                  className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-lg font-black text-emerald-400 flex-shrink-0 cursor-pointer shadow-md"
+                  className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-lg font-black text-emerald-700 flex-shrink-0 cursor-pointer shadow-sm"
                 >
                   {player.avatar ? (
                     <img src={player.avatar} alt={player.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -337,50 +337,50 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
                   <div className="flex items-center gap-1.5">
                     <h3
                       onClick={() => setSelectedPlayer(player)}
-                      className="font-extrabold text-base text-white truncate cursor-pointer hover:text-emerald-400 transition-colors"
+                      className="font-extrabold text-base text-slate-900 truncate cursor-pointer hover:text-emerald-700 transition-colors"
                     >
                       {player.name}
                     </h3>
                     {(player.isVerified || player.verificationStatus === 'verified') ? (
                       <span title="Verified Cricket Passport">
-                        <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                        <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0" />
                       </span>
                     ) : (
-                      <span title="Unverified Grassroots Profile" className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                      <span title="Unverified Grassroots Profile" className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-400 capitalize mt-0.5">
+                  <p className="text-xs text-slate-500 capitalize mt-0.5">
                     {player.role} • {player.city || player.country}
                   </p>
 
                   <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-emerald-400 font-bold">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-800 font-bold">
                       {player.fanClubId}
                     </span>
 
                     {(player.isVerified || player.verificationStatus === 'verified') ? (
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-emerald-800">
                         Verified
                       </span>
                     ) : player.verificationStatus === 'claimed' ? (
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-cyan-300">
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-100 border border-sky-300 text-sky-800">
                         Claimed
                       </span>
                     ) : (
-                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-800">
                         Unverified
                       </span>
                     )}
 
                     {player.grassrootsCategory && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700">
                         {player.grassrootsCategory.replace(/_/g, ' ')}
                       </span>
                     )}
 
                     {player.dataProvenance?.source === 'cricHeroes' && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800">
                         CricHeroes
                       </span>
                     )}
@@ -389,36 +389,36 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
               </div>
 
               {/* Stats Row (Real numbers preserved, zero fake data) */}
-              <div className="mt-4 grid grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-center">
+              <div className="mt-4 grid grid-cols-4 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Matches</div>
-                  <div className="text-xs font-black text-white">{player.matches ?? stats.matches ?? 0}</div>
+                  <div className="text-xs font-black text-slate-900">{player.matches ?? stats.matches ?? 0}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Runs</div>
-                  <div className="text-xs font-black text-emerald-400">
+                  <div className="text-xs font-black text-emerald-700">
                     {player.runs !== undefined ? player.runs : stats.runs > 0 ? stats.runs : '-'}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Wickets</div>
-                  <div className="text-xs font-black text-cyan-400">
+                  <div className="text-xs font-black text-sky-700">
                     {player.wickets !== undefined ? player.wickets : stats.wickets > 0 ? stats.wickets : '-'}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Avg / SR</div>
-                  <div className="text-xs font-black text-white">
+                  <div className="text-xs font-black text-slate-900">
                     {stats.battingAverage > 0 ? stats.battingAverage.toFixed(1) : '-'}
                   </div>
                 </div>
               </div>
 
               {/* Action Footer */}
-              <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                 <button
                   onClick={() => setSelectedPlayer(player)}
-                  className="text-xs font-bold text-slate-300 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                  className="text-xs font-bold text-slate-700 hover:text-emerald-700 flex items-center gap-1 transition-colors"
                 >
                   View Full Profile <ChevronRight size={13} />
                 </button>
@@ -428,8 +428,8 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
                     onClick={() => handleToggleCompare(player)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 font-black'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                        ? 'bg-amber-400 text-amber-950 font-black'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                     }`}
                   >
                     {isSelected ? 'Selected' : '+ Compare'}
@@ -437,14 +437,14 @@ export const PlayerDatabaseView: React.FC<PlayerDatabaseViewProps> = ({
                 ) : !player.isVerified && player.verificationStatus !== 'verified' && onNavigateToClaim ? (
                   <button
                     onClick={onNavigateToClaim}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all"
+                    className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all"
                   >
                     Claim Profile
                   </button>
                 ) : (
                   <button
                     onClick={() => setSelectedPlayer(player)}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400"
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-emerald-700"
                     title="View Digital Passport"
                   >
                     <QrCode size={14} />

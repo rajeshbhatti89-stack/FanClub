@@ -90,15 +90,15 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-100">
+    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-900">
       {/* Top Banner */}
-      <div className="pb-6 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="pb-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest uppercase mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black tracking-widest uppercase mb-2">
             <Building size={13} /> CLUBS & ROSTERS
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Cricket Clubs & Teams</h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Cricket Clubs & Teams</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Local academy clubs, grassroots squads, franchise teams, and player squad rosters.
           </p>
         </div>
@@ -106,7 +106,7 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowNewClubModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition-all active:scale-95"
           >
             <Plus size={14} className="stroke-[3]" /> Register Local Club
           </button>
@@ -115,13 +115,13 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
 
       {/* Tabs & Search */}
       <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit">
+        <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 shadow-sm rounded-2xl w-fit">
           <button
             onClick={() => setActiveTab('clubs')}
             className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'clubs'
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-emerald-600 text-white font-black shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Local Clubs ({clubs.length})
@@ -130,8 +130,8 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
             onClick={() => setActiveTab('teams')}
             className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'teams'
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-emerald-600 text-white font-black shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Match Teams ({teams.length})
@@ -139,13 +139,13 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
         </div>
 
         <div className="relative max-w-xs w-full">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search clubs or teams..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm font-medium"
           />
         </div>
       </div>
@@ -157,7 +157,7 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
             <div
               key={club.id}
               onClick={() => setSelectedClub(club)}
-              className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden group"
+              className="p-6 rounded-3xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer relative overflow-hidden group shadow-sm"
             >
               <div
                 className="absolute top-0 left-0 right-0 h-1.5"
@@ -167,44 +167,44 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-md"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-sm"
                     style={{ backgroundColor: club.primaryColor }}
                   >
                     {club.shortName}
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base text-white group-hover:text-emerald-400 transition-colors">
+                    <h3 className="font-extrabold text-base text-slate-900 group-hover:text-emerald-700 transition-colors">
                       {club.name}
                     </h3>
-                    <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                    <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                       <MapPin size={11} /> {club.city}, {club.country}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="mt-3 text-xs text-slate-300 line-clamp-2 leading-relaxed">
+              <p className="mt-3 text-xs text-slate-600 line-clamp-2 leading-relaxed">
                 {club.description}
               </p>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 py-3 border-y border-slate-800/80 text-center text-xs">
+              <div className="mt-4 grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-center text-xs">
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Home Ground</div>
-                  <div className="font-bold text-white text-[11px] truncate">{club.homeGround}</div>
+                  <div className="font-bold text-slate-800 text-[11px] truncate">{club.homeGround}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Members</div>
-                  <div className="font-bold text-emerald-400">{club.memberCount}</div>
+                  <div className="font-bold text-emerald-700">{club.memberCount}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-500 uppercase font-semibold">Trophies</div>
-                  <div className="font-bold text-amber-400">{club.trophiesCount}</div>
+                  <div className="font-bold text-amber-700">{club.trophiesCount}</div>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                 <span>Founded {club.foundedYear || 2020}</span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                <span className="text-emerald-700 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                   View Squads <ChevronRight size={13} />
                 </span>
               </div>
@@ -223,7 +223,7 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
                 setSelectedTeam(team);
                 if (onSelectTeam) onSelectTeam(team);
               }}
-              className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden group"
+              className="p-6 rounded-3xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer relative overflow-hidden group shadow-sm"
             >
               <div
                 className="absolute top-0 left-0 right-0 h-1.5"
@@ -234,16 +234,16 @@ export const TeamsAndClubsView: React.FC<TeamsAndClubsViewProps> = ({ onSelectTe
 
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-md"
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-sm"
                   style={{ backgroundColor: team.color }}
                 >
                   {team.shortName}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-extrabold text-base text-white truncate group-hover:text-emerald-400 transition-colors">
+                  <h3 className="font-extrabold text-base text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
                     {team.name}
                   </h3>
-                  <p className="text-xs text-slate-400 truncate">
+                  <p className="text-xs text-slate-500 truncate">
                     {team.players.length} Squad Players
                   </p>
                 </div>

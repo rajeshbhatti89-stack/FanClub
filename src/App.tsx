@@ -7,7 +7,7 @@ import type {
   WicketType, 
   BallRecord 
 } from './types/cricket';
-import { DEFAULT_INITIAL_MATCH, DEFAULT_TEAMS, makeBlankInning } from './data/initialState';
+import { DEFAULT_INITIAL_MATCH, DEFAULT_TEAMS, makeBlankInning, createFreshLiveMatch } from './data/initialState';
 import { AppHeader, type MainNavTab } from './components/navigation/AppHeader';
 import ScorecardBanner from './components/ScorecardBanner';
 import LiveScoringPad from './components/LiveScoringPad';
@@ -60,7 +60,7 @@ export function App() {
 
   // Match State
   const [match, setMatch] = useState<Match>(() => {
-    const saved = localStorage.getItem('fanclub_active_match_v4');
+    const saved = localStorage.getItem('fanclub_active_match_v5');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -96,7 +96,7 @@ export function App() {
   }, [currentObsTheme]);
 
   useEffect(() => {
-    localStorage.setItem('fanclub_active_match_v4', JSON.stringify(match));
+    localStorage.setItem('fanclub_active_match_v5', JSON.stringify(match));
   }, [match]);
 
   // ============================================================
@@ -378,8 +378,18 @@ export function App() {
     });
   };
 
+  const handleResetMatch = () => {
+    if (window.confirm('Reset current match score to 0/0 (0.0 ov) for live tournament scoring?')) {
+      const fresh = createFreshLiveMatch();
+      setMatch(fresh);
+      localStorage.setItem('fanclub_active_match_v5', JSON.stringify(fresh));
+      setActiveTab('scoring');
+      setScoringSubTab('pad');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Master Top Navigation Bar */}
       <AppHeader
         activeTab={activeTab}
@@ -387,6 +397,7 @@ export function App() {
         currentPlan={currentPlan}
         onOpenPlans={() => setIsPlansModalOpen(true)}
         onOpenNewMatch={() => setIsNewMatchModalOpen(true)}
+        onResetMatch={handleResetMatch}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         currentUser={currentUser}
         currentLang={currentLang}
@@ -408,7 +419,7 @@ export function App() {
             />
 
             {/* Scoring Sub-Tabs Ribbon */}
-            <div className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit overflow-x-auto">
+            <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 shadow-sm rounded-2xl w-fit overflow-x-auto">
               {[
                 { id: 'pad', label: 'Live Scoring Pad', icon: <Activity size={14} /> },
                 { id: 'scorecard', label: 'Detailed Scorecard', icon: <FileSpreadsheet size={14} /> },
@@ -422,8 +433,8 @@ export function App() {
                   onClick={() => setScoringSubTab(sub.id as any)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     scoringSubTab === sub.id
-                      ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-black shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   {sub.icon}
@@ -566,19 +577,19 @@ export function App() {
       </main>
 
       {/* Production Footer */}
-      <footer className="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-600 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-black text-white">FAN CLUB PRO</span>
+            <span className="font-black text-slate-900">FAN CLUB PRO</span>
             <span>•</span>
             <span>Worldwide Cricket Platform & CricHeroes Migration Engine</span>
             <span>•</span>
-            <span className="text-emerald-400 font-bold uppercase">OBS Theme: {currentObsTheme}</span>
+            <span className="text-emerald-700 font-bold uppercase">OBS Theme: {currentObsTheme}</span>
           </div>
           <div className="flex items-center gap-3">
             <span>Plans: Free / Pro ₹21 / Premium ₹51</span>
             <span>•</span>
-            <span className="font-mono text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+            <span className="font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 font-bold">
               fanclub.srijandev.in
             </span>
           </div>

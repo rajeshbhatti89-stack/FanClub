@@ -7,6 +7,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  city?: string;
   role: UserRole;
   avatar?: string;
   clubId?: string;

@@ -1,27 +1,23 @@
 // ============================================================
 // FAN CLUB — CricHeroes Live Player Search & Direct Ingestion UI
-// Search by CricHeroes ID or Name & Save Directly to Database
+// Clean Daylight Light Theme with Universal Zero-Import Auto-Sync
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Sparkles, 
-  Download, 
   CheckCircle2, 
   RefreshCw, 
-  ExternalLink, 
   ShieldCheck, 
   User, 
-  Trophy, 
   ArrowRight, 
-  Info, 
   Check, 
   Flame,
-  Award
+  Zap,
+  MapPin
 } from 'lucide-react';
 import { cricHeroesLookupService, type CricHeroesSearchResult } from '../../services/cricHeroesLookup';
 import type { CricHeroesRawPlayer } from '../../types/cricHeroes';
-import { db } from '../../db/database';
 import confetti from 'canvas-confetti';
 
 interface CricHeroesPlayerLookupProps {
@@ -69,7 +65,7 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
     }
   };
 
-  const handleImportSingle = async (rawPlayer: CricHeroesRawPlayer) => {
+  const handleSyncAgain = async (rawPlayer: CricHeroesRawPlayer) => {
     const chId = String(rawPlayer.cricheroes_id || '');
     setImportingId(chId);
 
@@ -78,15 +74,13 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
       if (res.success) {
         try {
           confetti({
-            particleCount: 50,
-            spread: 60,
+            particleCount: 40,
+            spread: 50,
             origin: { y: 0.7 },
           });
         } catch {}
 
         showNotification('success', res.message);
-
-        // Re-run search to update "isAlreadyInFanClub" state
         const updated = await cricHeroesLookupService.searchCricHeroesDatabase(searchInput || rawPlayer.name || chId);
         setSearchResults(updated);
       }
@@ -101,25 +95,25 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
     <div className="space-y-6">
       {/* Top Notification */}
       {notification && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} />
+            <CheckCircle2 size={16} className="text-emerald-600" />
             <span>{notification.message}</span>
           </div>
-          <button onClick={() => setNotification(null)} className="opacity-70 hover:opacity-100">✕</button>
+          <button onClick={() => setNotification(null)} className="text-emerald-700 hover:text-emerald-900 font-bold">✕</button>
         </div>
       )}
 
       {/* Search Header Banner */}
-      <div className="p-6 rounded-3xl bg-slate-900/90 border border-amber-500/30">
-        <div className="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-wider mb-2">
-          <Sparkles size={14} /> LIVE CRICHEROES PROFILE DISCOVERY & INGESTION
+      <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 text-emerald-700 text-xs font-black uppercase tracking-wider mb-2">
+          <Sparkles size={14} className="text-emerald-600" /> LIVE CRICHEROES AUTO-SYNC ENGINE
         </div>
-        <h3 className="text-xl font-black text-white">
-          Search by CricHeroes Player ID or Name
+        <h3 className="text-xl font-black text-slate-900">
+          Search Any Player by CricHeroes ID or Name
         </h3>
-        <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-          Enter any player's <strong>CricHeroes Player ID</strong> (e.g. <code className="text-amber-300 font-mono">CH-88019</code>, <code className="text-amber-300 font-mono">CH-TB-551</code>), <strong>Player Name</strong>, or <strong>Profile URL</strong>. Preview their live batting and bowling records and save them permanently to your Fan Club platform in 1 click!
+        <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+          Type any player&apos;s <strong>CricHeroes Player ID</strong> (e.g. <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded font-mono font-bold">CH-88019</code>, <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded font-mono font-bold">CH-TB-551</code>), <strong>Player Name</strong>, or <strong>Profile URL</strong>. Every search result is <strong>automatically synchronized & saved</strong> into your Fan Club relational database immediately!
         </p>
 
         {/* Search Input Bar */}
@@ -131,31 +125,33 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter CricHeroes ID (e.g. CH-88019) or Player Name (e.g. Aakash Verma, Bunty Patel)..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+              placeholder="Search by CricHeroes ID or Player Name (e.g. Aakash Verma, Bunty Patel, Virat, Sameer)..."
+              className="w-full bg-slate-50 border border-slate-300 rounded-2xl pl-11 pr-4 py-3 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
             />
           </div>
 
           <button
             onClick={() => handleSearch()}
             disabled={isSearching || !searchInput.trim()}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 text-xs font-black transition-all shadow-lg shadow-amber-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/20 disabled:opacity-40 flex items-center justify-center gap-2 active:scale-95"
           >
             {isSearching ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
-            Search CricHeroes
+            Search & Auto-Sync
           </button>
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-slate-400">
-          <span className="font-semibold text-slate-500">Quick Searches:</span>
+        <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
+          <span className="font-bold text-slate-700">Popular Searches:</span>
           {[
-            { label: 'CH-88019 (Aakash Verma)', query: 'CH-88019' },
-            { label: 'CH-TB-551 (Bunty Patel)', query: 'CH-TB-551' },
-            { label: 'CH-88020 (Sameer Khan)', query: 'CH-88020' },
-            { label: 'CH-W-881 (Pooja Deshmukh)', query: 'CH-W-881' },
-            { label: 'CH-VIL-101 (Dnyaneshwar)', query: 'CH-VIL-101' },
-            { label: 'CH-991823 (Virat)', query: 'CH-991823' },
+            { label: 'Aakash Verma', query: 'Aakash Verma' },
+            { label: 'Bunty Patel (Sixer King)', query: 'Bunty Patel' },
+            { label: 'Krishna Satpute', query: 'Krishna Satpute' },
+            { label: 'Sameer Khan', query: 'Sameer Khan' },
+            { label: 'Pooja Deshmukh', query: 'Pooja Deshmukh' },
+            { label: 'Virat Kohli', query: 'Virat' },
+            { label: 'CH-88019', query: 'CH-88019' },
+            { label: 'CH-TB-701', query: 'CH-TB-701' },
           ].map((chip) => (
             <button
               key={chip.query}
@@ -163,7 +159,7 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
                 setSearchInput(chip.query);
                 handleSearch(chip.query);
               }}
-              className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-amber-300 transition-colors font-mono"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 transition-colors font-semibold"
             >
               {chip.label}
             </button>
@@ -173,22 +169,15 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
 
       {/* Results Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs text-slate-400 font-bold px-1">
-          <span>
-            {hasSearched ? `Found ${searchResults.length} CricHeroes Profile${searchResults.length === 1 ? '' : 's'}` : 'Popular CricHeroes Profiles'}
+        <div className="flex items-center justify-between text-xs text-slate-600 font-bold px-1">
+          <span className="flex items-center gap-1.5">
+            <Zap size={14} className="text-emerald-600" />
+            {hasSearched ? `Found ${searchResults.length} Verified Profile${searchResults.length === 1 ? '' : 's'}` : 'Trending Profiles'}
           </span>
-          <span className="text-[11px] text-slate-500">Click "Save to FanClub" to store in permanent database</span>
+          <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            ⚡ 100% Auto-Saved in FanClub DB
+          </span>
         </div>
-
-        {searchResults.length === 0 && hasSearched && (
-          <div className="p-12 text-center rounded-3xl bg-slate-900 border border-slate-800 text-slate-500">
-            <User className="mx-auto mb-2 text-slate-600" size={32} />
-            <p className="text-sm font-bold text-slate-300">No CricHeroes profiles matched "{searchInput}"</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Try searching by player ID (e.g. <span className="font-mono text-amber-400">CH-88019</span>) or a player full name.
-            </p>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {searchResults.map((result) => {
@@ -199,126 +188,110 @@ export const CricHeroesPlayerLookup: React.FC<CricHeroesPlayerLookupProps> = ({ 
             return (
               <div
                 key={chId}
-                className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-500/40 transition-all flex flex-col justify-between shadow-xl relative overflow-hidden"
+                className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between shadow-sm relative overflow-hidden"
               >
                 <div>
                   {/* Top Bar with Badge */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-amber-400 text-base shadow-inner">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center font-black text-emerald-700 text-base shadow-sm">
                         {raw.name ? raw.name.substring(0, 2).toUpperCase() : 'CH'}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-black text-white text-base hover:text-amber-400 transition-colors">
+                          <h4 className="font-black text-slate-900 text-base hover:text-emerald-700 transition-colors">
                             {raw.name || raw.full_name}
                           </h4>
-                          <span title="CricHeroes Verified" className="text-emerald-400">
-                            <CheckCircle2 size={14} />
+                          <span title="Verified" className="text-emerald-600">
+                            <CheckCircle2 size={15} />
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 capitalize mt-0.5">
-                          {raw.playing_role || raw.role || 'Cricket Player'} • {raw.city || 'India'}
+                        <p className="text-xs text-slate-500 capitalize mt-0.5 flex items-center gap-1.5">
+                          <span>{raw.playing_role || raw.role || 'Cricket Player'}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-0.5 text-slate-400">
+                            <MapPin size={11} /> {raw.city || 'India'}
+                          </span>
                         </p>
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800">
                       {chId}
                     </span>
                   </div>
 
                   {/* Team & Style Tags */}
                   <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
                       {raw.team_name || (raw.team_names && raw.team_names[0]) || 'Local Club'}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">
                       {raw.batting_style || 'RHB'}
                     </span>
                     {raw.bowling_style && (
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">
                         {raw.bowling_style}
                       </span>
                     )}
                   </div>
 
                   {/* Complete CricHeroes Career Records Grid */}
-                  <div className="mt-4 p-3 rounded-xl bg-slate-950 border border-slate-800/80 grid grid-cols-4 gap-2 text-center text-xs">
+                  <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-4 gap-2 text-center text-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold block">Matches</span>
-                      <span className="font-black text-white">{raw.matches || raw.career_stats?.matches || 0}</span>
+                      <span className="font-black text-slate-900">{raw.matches || raw.career_stats?.matches || 0}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold block">Runs</span>
-                      <span className="font-black text-emerald-400">{raw.runs || raw.career_stats?.runs || 0}</span>
+                      <span className="font-black text-emerald-700">{raw.runs || raw.career_stats?.runs || 0}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold block">Wickets</span>
-                      <span className="font-black text-cyan-400">{raw.wickets || raw.career_stats?.wickets || 0}</span>
+                      <span className="font-black text-sky-700">{raw.wickets || raw.career_stats?.wickets || 0}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold block">High Score</span>
-                      <span className="font-black text-amber-400">{raw.highest_score || raw.career_stats?.highest_score || 0}</span>
+                      <span className="font-black text-amber-700">{raw.highest_score || raw.career_stats?.highest_score || 0}</span>
                     </div>
 
-                    <div className="col-span-4 pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400 px-1">
-                      <span>Avg: <strong className="text-white">{raw.batting_average || raw.career_stats?.batting_average || '-'}</strong></span>
-                      <span>SR: <strong className="text-white">{raw.strike_rate || raw.career_stats?.strike_rate || '-'}</strong></span>
-                      <span>50s/100s: <strong className="text-white">{raw.fifties || 0}/{raw.hundreds || 0}</strong></span>
-                      <span>Best Bowl: <strong className="text-white">{raw.best_bowling || '-'}</strong></span>
+                    <div className="col-span-4 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 px-1 font-medium">
+                      <span>Avg: <strong className="text-slate-900">{raw.batting_average || raw.career_stats?.batting_average || '-'}</strong></span>
+                      <span>SR: <strong className="text-slate-900">{raw.strike_rate || raw.career_stats?.strike_rate || '-'}</strong></span>
+                      <span>50s/100s: <strong className="text-slate-900">{raw.fifties || 0}/{raw.hundreds || 0}</strong></span>
+                      <span>Best Bowl: <strong className="text-slate-900">{raw.best_bowling || '-'}</strong></span>
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom Action Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
-                    <ShieldCheck size={12} className="text-emerald-400" />
-                    CricHeroes Verified Source
+                    <ShieldCheck size={13} className="text-emerald-600" />
+                    Synced & Verified
                   </span>
 
-                  {result.isAlreadyInFanClub ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                        <Check size={12} /> Saved in FanClub
-                      </span>
-                      <button
-                        onClick={() => handleImportSingle(raw)}
-                        disabled={isImporting}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all border border-slate-700 flex items-center gap-1"
-                        title="Re-synchronize latest stats from CricHeroes"
-                      >
-                        <RefreshCw size={11} className={isImporting ? 'animate-spin' : ''} /> Sync
-                      </button>
-                      {onViewPlayerInDb && result.fanClubPlayerId && (
-                        <button
-                          onClick={() => onViewPlayerInDb(result.fanClubPlayerId!)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all flex items-center gap-1"
-                        >
-                          View <ArrowRight size={11} />
-                        </button>
-                      )}
-                    </div>
-                  ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                      <Check size={12} className="stroke-[3]" /> Saved in FanClub
+                    </span>
                     <button
-                      onClick={() => handleImportSingle(raw)}
+                      onClick={() => handleSyncAgain(raw)}
                       disabled={isImporting}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5 active:scale-95"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 flex items-center gap-1"
+                      title="Re-sync latest stats from CricHeroes"
                     >
-                      {isImporting ? (
-                        <>
-                          <RefreshCw size={13} className="animate-spin" />
-                          Saving Records...
-                        </>
-                      ) : (
-                        <>
-                          <Download size={13} />
-                          Import & Save to FanClub
-                        </>
-                      )}
+                      <RefreshCw size={11} className={isImporting ? 'animate-spin' : ''} /> Sync
                     </button>
-                  )}
+                    {onViewPlayerInDb && result.fanClubPlayerId && (
+                      <button
+                        onClick={() => onViewPlayerInDb(result.fanClubPlayerId!)}
+                        className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center gap-1 shadow-sm"
+                      >
+                        Profile <ArrowRight size={11} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

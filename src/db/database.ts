@@ -620,12 +620,26 @@ class FanClubDatabase {
       this.schema.users[0] || {
         id: 'usr-admin-1',
         email: 'admin@fanclub.in',
+        phone: '+91 98765 43210',
         name: 'Rajesh Bhatti',
         role: 'super_admin',
+        city: 'Mumbai',
         createdAt: '2026-01-01T00:00:00Z',
         status: 'active',
       }
     );
+  }
+
+  public getUserByPhone(phone: string): User | undefined {
+    const cleanPhone = phone.replace(/\D/g, '');
+    return this.schema.users.find(u => u.phone && u.phone.replace(/\D/g, '') === cleanPhone);
+  }
+
+  public logoutUser(): void {
+    try {
+      localStorage.removeItem('fanclub_current_user');
+    } catch {}
+    this.notify();
   }
 
   public setCurrentUser(user: User): void {

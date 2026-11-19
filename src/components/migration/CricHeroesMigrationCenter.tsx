@@ -282,27 +282,26 @@ export const CricHeroesMigrationCenter: React.FC = () => {
   const migratedFromChCount = db.getPlayers().filter((p) => p.dataProvenance.source === 'cricHeroes').length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-100">
+    <div className="max-w-7xl mx-auto px-4 py-8 text-slate-900">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm shadow-2xl flex items-center gap-2 border border-emerald-300 animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-xl flex items-center gap-2 border border-emerald-400 animate-bounce">
           <Sparkles size={16} /> {notification}
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest uppercase mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black tracking-widest uppercase mb-3">
               <Database size={13} /> CRICHEROES DATA MIGRATION ENGINE
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               CricHeroes Migration Centre
             </h1>
-            <p className="mt-2 text-slate-400 text-sm max-w-2xl leading-relaxed">
+            <p className="mt-2 text-slate-600 text-sm max-w-2xl leading-relaxed font-medium">
               Automated player discovery, identity resolution, format statistic normalization, and bulk synchronization.
               Full provenance tracking and duplicate detection with conflict resolution safeguards.
             </p>
@@ -318,7 +317,7 @@ export const CricHeroesMigrationCenter: React.FC = () => {
             </button>
             <button
               onClick={downloadSampleCsv}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs transition-colors shadow-sm"
             >
               <Download size={14} /> Download CSV Template
             </button>
@@ -327,24 +326,24 @@ export const CricHeroesMigrationCenter: React.FC = () => {
 
         {/* Real-time Metric Cards */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <div className="text-xs text-slate-400 uppercase font-semibold">Total Database Players</div>
-            <div className="text-2xl font-black text-white mt-1">{allPlayersCount}</div>
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+            <div className="text-xs text-slate-500 uppercase font-semibold">Total Database Players</div>
+            <div className="text-2xl font-black text-slate-900 mt-1">{allPlayersCount}</div>
             <div className="text-[11px] text-slate-500 mt-1">Global active registry</div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <div className="text-xs text-slate-400 uppercase font-semibold">Migrated From CricHeroes</div>
-            <div className="text-2xl font-black text-emerald-400 mt-1">{migratedFromChCount}</div>
-            <div className="text-[11px] text-emerald-500/80 mt-1">Verified provenance</div>
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+            <div className="text-xs text-slate-500 uppercase font-semibold">Migrated From CricHeroes</div>
+            <div className="text-2xl font-black text-emerald-700 mt-1">{migratedFromChCount}</div>
+            <div className="text-[11px] text-emerald-700 mt-1 font-semibold">Verified provenance</div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <div className="text-xs text-slate-400 uppercase font-semibold">Duplicate Candidates</div>
-            <div className="text-2xl font-black text-amber-400 mt-1">{duplicateCandidates.length}</div>
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+            <div className="text-xs text-slate-500 uppercase font-semibold">Duplicate Candidates</div>
+            <div className="text-2xl font-black text-amber-700 mt-1">{duplicateCandidates.length}</div>
             <div className="text-[11px] text-slate-500 mt-1">Pending admin resolution</div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <div className="text-xs text-slate-400 uppercase font-semibold">Engine Compliance</div>
-            <div className="text-2xl font-black text-cyan-400 mt-1">100%</div>
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+            <div className="text-xs text-slate-500 uppercase font-semibold">Engine Compliance</div>
+            <div className="text-2xl font-black text-sky-700 mt-1">100%</div>
             <div className="text-[11px] text-slate-500 mt-1">Authorized terms & APIs</div>
           </div>
         </div>
@@ -355,7 +354,7 @@ export const CricHeroesMigrationCenter: React.FC = () => {
         {/* Left Column: Import Engine Controls */}
         <div className="lg:col-span-2 space-y-6">
           {/* Mode Switcher */}
-          <div className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl flex-wrap">
+          <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 shadow-sm rounded-2xl flex-wrap">
             {[
               { id: 'lookup', label: '🔍 Search by ID / Name', highlight: true },
               { id: 'sample', label: '1-Click Sample' },
@@ -369,11 +368,11 @@ export const CricHeroesMigrationCenter: React.FC = () => {
                 className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl whitespace-nowrap transition-all ${
                   importMode === m.id
                     ? m.highlight
-                      ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                      : 'bg-emerald-500 text-slate-950 shadow-md font-black'
+                      ? 'bg-amber-400 text-amber-950 shadow-sm font-black'
+                      : 'bg-emerald-600 text-white shadow-sm font-black'
                     : m.highlight
-                    ? 'text-amber-400 hover:text-amber-300 font-bold'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'text-amber-700 hover:text-amber-900 font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {m.label}
