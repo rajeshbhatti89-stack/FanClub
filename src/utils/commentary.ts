@@ -125,14 +125,51 @@ function pick<T>(arr: T[]): T {
 }
 
 export function generateBallCommentary(
-  bowlerName: string,
-  strikerName: string,
-  runsOffBat: number,
-  isWicket: boolean,
-  wicketType?: WicketType,
-  extraType?: ExtraType,
-  wagonDirection?: string
+  arg1: string | {
+    bowlerName?: string;
+    strikerName?: string;
+    runsOffBat?: number;
+    isWicket?: boolean;
+    wicketType?: WicketType;
+    extraType?: ExtraType;
+    extraRuns?: number;
+    isFreeHit?: boolean;
+    wagonDirection?: string;
+    milestone?: string;
+  },
+  pStrikerName = '',
+  pRunsOffBat = 0,
+  pIsWicket = false,
+  pWicketType?: WicketType,
+  pExtraType?: ExtraType,
+  pWagonDirection?: string
 ): string {
+  let bowlerName = '';
+  let strikerName = '';
+  let runsOffBat = 0;
+  let isWicket = false;
+  let wicketType: WicketType | undefined = undefined;
+  let extraType: ExtraType | undefined = undefined;
+  let wagonDirection: string | undefined = undefined;
+
+  if (typeof arg1 === 'object') {
+    bowlerName = arg1.bowlerName || 'Bowler';
+    strikerName = arg1.strikerName || 'Striker';
+    runsOffBat = arg1.runsOffBat || 0;
+    isWicket = !!arg1.isWicket;
+    wicketType = arg1.wicketType;
+    extraType = arg1.extraType;
+    wagonDirection = arg1.wagonDirection;
+  } else {
+    bowlerName = arg1 || 'Bowler';
+    strikerName = pStrikerName || 'Striker';
+    runsOffBat = pRunsOffBat;
+    isWicket = pIsWicket;
+    wicketType = pWicketType;
+    extraType = pExtraType;
+    wagonDirection = pWagonDirection;
+  }
+
   if (isWicket && wicketType) {
     const lines = WICKET_LINES[wicketType] || WICKET_LINES.default;
     const base = pick(lines);

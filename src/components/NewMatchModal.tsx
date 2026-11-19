@@ -46,6 +46,7 @@ const FORMAT_OVERS: Record<MatchFormat, number> = {
   ODI: 50,
   Test: 90,
   T10: 10,
+  '100 Balls': 16,
   'Box Cricket': 6,
   Custom: 20,
 };

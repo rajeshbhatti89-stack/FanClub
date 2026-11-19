@@ -81,7 +81,7 @@ function computeMVP(match: Match): MVPEntry[] {
 
     // Bowling impact (from opposing inning's bowlers perspective, stored in this inning)
     inning.bowlers.forEach((bwl) => {
-      let pts = bwl.wickets * 20 + bwl.maidens * 5 + bwl.dots * 0.5;
+      let pts = bwl.wickets * 20 + (bwl.maidens || 0) * 5 + (bwl.dots || 0) * 0.5;
       const econ = bwl.economy;
       if (econ < 6) pts += 15;
       else if (econ < 8) pts += 8;
@@ -120,12 +120,13 @@ function computeMVP(match: Match): MVPEntry[] {
 
 function computeOverByOver(balls1: BallRecord[], balls2: BallRecord[], maxOvers: number): OverData[] {
   const data: OverData[] = [];
+  const getOverIdx = (b: BallRecord) => (b.overIndex ?? (b.overNumber ? b.overNumber - 1 : 0));
   for (let o = 0; o < maxOvers; o++) {
-    const inn1 = balls1.filter((b) => b.overIndex === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
-    const inn2 = balls2.filter((b) => b.overIndex === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
+    const inn1 = balls1.filter((b) => getOverIdx(b) === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
+    const inn2 = balls2.filter((b) => getOverIdx(b) === o).reduce((s, b) => s + b.runsOffBat + b.extraRuns, 0);
     if (o < Math.max(
-      balls1.length > 0 ? (Math.max(...balls1.map(b => b.overIndex)) + 1) : 0,
-      balls2.length > 0 ? (Math.max(...balls2.map(b => b.overIndex)) + 1) : 0,
+      balls1.length > 0 ? (Math.max(...balls1.map(getOverIdx)) + 1) : 0,
+      balls2.length > 0 ? (Math.max(...balls2.map(getOverIdx)) + 1) : 0,
       1
     )) {
       data.push({ over: o + 1, inn1Runs: inn1, inn2Runs: inn2 });

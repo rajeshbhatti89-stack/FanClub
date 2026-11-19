@@ -258,7 +258,17 @@ function CreateTournamentModal({ onClose, onSave }: CreateTournamentModalProps) 
       shortName: td.shortName,
       color: td.color,
       secondaryColor: td.color,
+      city: 'Local',
+      country: 'India',
       players: [],
+      teamStats: {
+        matches: 0,
+        won: 0,
+        lost: 0,
+        tied: 0,
+        noResult: 0,
+        winPercentage: 0,
+      },
     }));
 
     const standings: TournamentTeamStats[] = builtTeams.map(t =>

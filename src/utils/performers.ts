@@ -80,8 +80,8 @@ export function computeMatchPerformers(match: Match): MatchPerformers {
 
       if (bowl && (bowl.overs > 0 || bowl.balls > 0)) {
         pts += bowl.wickets * 25;
-        pts += bowl.maidens * 12;
-        pts += bowl.dots * 1;
+        pts += (bowl.maidens || 0) * 12;
+        pts += (bowl.dots || 0) * 1;
         if (bowl.economy <= 5.0 && (bowl.overs > 0 || bowl.balls >= 3)) pts += 15;
         if (bowl.wickets >= 3) pts += 15;
         if (bowl.wickets >= 5) pts += 25;
@@ -126,7 +126,7 @@ export function computeMatchPerformers(match: Match): MatchPerformers {
           team: bestBowl.team,
           teamColor: bestBowl.teamColor,
           overs: bestBowl.overs,
-          maidens: bestBowl.maidens,
+          maidens: bestBowl.maidens || 0,
           runsConceded: bestBowl.runsConceded,
           wickets: bestBowl.wickets,
           economy: bestBowl.economy,

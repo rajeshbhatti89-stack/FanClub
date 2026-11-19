@@ -121,6 +121,19 @@ const THEMES: Record<ObsThemeId, ThemeSpec> = {
     previewTopColor: '#334155',
     previewBodyColor: '#0F172A',
   },
+  testClassic: {
+    id: 'testClassic',
+    label: 'Test Match Classic',
+    subtitle: 'Traditional Red Ball Broadcast',
+    barBg: 'linear-gradient(90deg, #1C1917 0%, #292524 50%, #1C1917 100%)',
+    topBg: 'linear-gradient(90deg, #881337 0%, #BE123C 50%, #881337 100%)',
+    scoreColor: '#FEF08A',
+    accentColor: '#E11D48',
+    bodyBg: 'linear-gradient(90deg, #1C1917 0%, #292524 50%, #1C1917 100%)',
+    branding: '🏏 TEST CRICKET LIVE',
+    previewTopColor: '#BE123C',
+    previewBodyColor: '#1C1917',
+  },
 };
 
 const GRAPHIC_MODES: { id: GraphicMode; label: string; icon: React.ReactNode }[] = [

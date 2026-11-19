@@ -1,11 +1,11 @@
 // ============================================================
-// FanClub — Full CricHeroes Clone Types
+// FAN CLUB — Master Cricket Data Types
 // ============================================================
 
 export type PlanType = 'free' | 'pro' | 'premium';
 
 /** OBS Broadcast Overlay Themes — strictly for OBS Studio Browser Source */
-export type ObsThemeId = 'wcFinal' | 'asiaCup' | 'sunsetIPL' | 'teamCustom';
+export type ObsThemeId = 'wcFinal' | 'asiaCup' | 'sunsetIPL' | 'testClassic' | 'teamCustom';
 
 export type PlayerRole = 'batsman' | 'bowler' | 'allrounder' | 'wicketkeeper';
 export type BattingStyle = 'RHB' | 'LHB';
@@ -19,6 +19,8 @@ export type BowlingStyle =
   | 'Left-arm Fast-Medium'
   | 'Left-arm Orthodox Spin'
   | 'Left-arm Wrist Spin';
+
+export type CricketFormat = 'Test' | 'ODI' | 'T20I' | 'T20' | 'IPL' | 'List A' | 'First Class' | 'Domestic' | 'Box Cricket';
 
 export type WicketType =
   | 'bowled'
@@ -39,50 +41,182 @@ export type ExtraType = 'none' | 'wide' | 'no_ball' | 'bye' | 'leg_bye' | 'penal
 export type MatchStatus = 'upcoming' | 'live' | 'innings_break' | 'completed' | 'abandoned';
 
 export type BallType = 'tennis' | 'leather_white' | 'leather_red' | 'leather_pink' | 'rubber';
-export type MatchFormat = 'T20' | 'ODI' | 'Test' | 'T10' | 'Box Cricket' | 'Custom';
+export type MatchFormat = 'T20' | 'ODI' | 'Test' | 'T10' | '100 Balls' | 'Box Cricket' | 'Custom';
 
-// ---- Player ----
-export interface Player {
-  id: string;
-  name: string;
-  role: PlayerRole;
-  battingStyle?: BattingStyle;
-  bowlingStyle?: BowlingStyle;
-  avatar?: string; // base64 or URL
-  jerseyNumber?: number;
-  // Career stats
+// ---- Format Specific Player Stats ----
+export interface FormatStats {
   matches: number;
   innings: number;
   runs: number;
   highestScore: number;
+  highestScoreNotOut?: boolean;
   notOuts: number;
   fifties: number;
   hundreds: number;
+  doubleHundreds?: number;
   strikeRate: number;
   battingAverage: number;
+  fours: number;
+  sixes: number;
+  ducks: number;
   wickets: number;
+  bowlingOvers: number;
+  runsConceded: number;
   bowlingEconomy: number;
   bowlingAverage: number;
+  bowlingStrikeRate: number;
   bestBowling: string;
+  fourWicketHauls: number;
+  fiveWicketHauls: number;
   catches: number;
   runOuts: number;
   stumpings: number;
 }
 
-// ---- Team ----
-export interface Team {
+export interface PlayerCareerHistory {
+  year: number;
+  team: string;
+  tournament: string;
+  role: string;
+  runs: number;
+  wickets: number;
+  highlights?: string;
+}
+
+export interface PlayerAchievement {
+  id: string;
+  title: string;
+  date: string;
+  tournament: string;
+  description: string;
+  badgeIcon: string;
+}
+
+// ---- Player ----
+export interface Player {
+  id: string;
+  fanClubId: string; // Unique FanClub ID e.g. FC-IND-18001
+  name: string;
+  fullName?: string;
+  displayName?: string;
+  country: string;
+  state?: string;
+  city?: string;
+  nationality: string;
+  dateOfBirth?: string;
+  age?: number;
+  role: PlayerRole;
+  battingStyle: BattingStyle;
+  bowlingStyle?: BowlingStyle;
+  avatar?: string;
+  jerseyNumber?: number;
+  currentTeam?: string;
+  teams: string[];
+  isVerified: boolean;
+  isInternational: boolean;
+  isDomestic: boolean;
+  isLocalClub: boolean;
+  cricheroesId?: string;
+  externalProviderIds?: Record<string, string>;
+  dataProvenance: {
+    source: 'cricHeroes' | 'sportmonks' | 'cricketData' | 'manual' | 'localClub' | 'system';
+    importedAt: string;
+    lastSyncedAt?: string;
+    licenseAttribution?: string;
+  };
+  overallStats: FormatStats;
+  statsByFormat: {
+    test?: FormatStats;
+    odi?: FormatStats;
+    t20i?: FormatStats;
+    ipl?: FormatStats;
+    t20?: FormatStats;
+    firstClass?: FormatStats;
+    listA?: FormatStats;
+    domestic?: FormatStats;
+  };
+  // Backward compatibility / convenience flat stat accessors:
+  matches?: number;
+  innings?: number;
+  runs?: number;
+  highestScore?: number;
+  highestScoreNotOut?: boolean;
+  notOuts?: number;
+  strikeRate?: number;
+  battingAverage?: number;
+  fifties?: number;
+  hundreds?: number;
+  wickets?: number;
+  bowlingEconomy?: number;
+  bowlingAverage?: number;
+  bestBowling?: string;
+  catches?: number;
+  runOuts?: number;
+  stumpings?: number;
+
+  achievements: PlayerAchievement[];
+  careerHistory: PlayerCareerHistory[];
+  digitalPassportUrl?: string;
+  rankings?: {
+    batting?: number;
+    bowling?: number;
+    allRounder?: number;
+  };
+  followerCount: number;
+}
+
+// ---- Local Club ----
+export interface Club {
   id: string;
   name: string;
   shortName: string;
-  color: string;          // Primary hex
-  secondaryColor: string; // Secondary hex (for OBS gradient)
-  logo?: string;          // base64 or URL
-  captain?: string;       // Player ID
-  wicketkeeper?: string;  // Player ID
-  players: Player[];
+  city: string;
+  state?: string;
+  country: string;
+  foundedYear?: number;
+  logo?: string;
+  banner?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  homeGround: string;
+  president?: string;
+  headCoach?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  memberCount: number;
+  teamsCount: number;
+  trophiesCount: number;
+  status: 'active' | 'archived';
+  description?: string;
 }
 
-// ---- Ball ----
+// ---- Team ----
+export interface Team {
+  id: string;
+  clubId?: string;
+  name: string;
+  shortName: string;
+  city?: string;
+  country?: string;
+  color: string;          // Primary hex
+  secondaryColor: string; // Secondary hex (for OBS gradient)
+  logo?: string;
+  captain?: string;       // Player ID
+  viceCaptain?: string;   // Player ID
+  wicketkeeper?: string;  // Player ID
+  players: Player[];
+  teamStats?: {
+    matches: number;
+    won: number;
+    lost: number;
+    tied: number;
+    noResult: number;
+    winPercentage: number;
+  };
+  isOfficialFranchise?: boolean;
+}
+
+// ---- Ball Record & Scoring ----
 export interface WagonShot {
   direction: string;
   runs: number;
@@ -91,18 +225,23 @@ export interface WagonShot {
 }
 
 export interface BallRecord {
-  id: string;
-  overIndex: number;
-  ballInOver: number; // 1-6 for legal, 0 for extras
+  id?: string;
+  ballId?: string;
+  overIndex?: number;
+  overNumber?: number;
+  ballInOver?: number;
+  ballNumber?: number;
   bowlerId: string;
   bowlerName: string;
-  strikerId: string;
+  strikerId?: string;
   strikerName: string;
-  nonStrikerId: string;
+  batsmanId?: string;
+  batsmanName?: string;
+  nonStrikerId?: string;
   runsOffBat: number;
   extraRuns: number;
   extraType: ExtraType;
-  isLegalBall: boolean;
+  isLegalBall?: boolean;
   isWicket: boolean;
   wicketType?: WicketType;
   dismissedPlayerId?: string;
@@ -112,15 +251,18 @@ export interface BallRecord {
   isLofted?: boolean;
   isFreeHit: boolean;
   commentary: string;
-  timestamp: number;
+  milestone?: string;
+  timestamp: number | string;
 }
 
-// ---- Batting / Bowling per Inning ----
+// ---- Inning Batting & Bowling ----
 export interface BatsmanInning {
   playerId: string;
   name: string;
+  playerName?: string;
   runs: number;
   balls: number;
+  ballsFaced?: number;
   fours: number;
   sixes: number;
   strikeRate: number;
@@ -128,17 +270,21 @@ export interface BatsmanInning {
   didNotBat?: boolean;
   dismissal?: string;
   dismissalType?: WicketType;
+  dismissalInfo?: string;
+  wicketType?: WicketType;
+  isOnStrike?: boolean;
   bowlerName?: string;
   fielderName?: string;
-  wagonShots: WagonShot[];
-  milestones: Array<'duck' | 'ten' | 'twenty_five' | 'fifty' | 'hundred' | 'max_6'>;
+  wagonShots?: WagonShot[];
+  milestones?: Array<'duck' | 'ten' | 'twenty_five' | 'fifty' | 'hundred' | 'max_6'>;
 }
 
 export interface BowlerInning {
   playerId: string;
   name: string;
-  overs: number;         // completed overs (integer)
-  balls: number;         // balls in current over
+  playerName?: string;
+  overs: number;
+  balls: number;
   maidens: number;
   runsConceded: number;
   wickets: number;
@@ -150,14 +296,14 @@ export interface BowlerInning {
   sixesConceded: number;
 }
 
-// ---- Fall of Wickets / Partnership ----
 export interface FallOfWicket {
   wicketNumber: number;
   score: number;
-  overs: string;
+  overs?: string;
+  over?: string;
   batsmanName: string;
-  batsmanId: string;
-  dismissal: string;
+  batsmanId?: string;
+  dismissal?: string;
 }
 
 export interface Partnership {
@@ -172,7 +318,6 @@ export interface Partnership {
   totalBalls: number;
 }
 
-// ---- Inning ----
 export interface Inning {
   teamId: string;
   teamName: string;
@@ -182,7 +327,7 @@ export interface Inning {
   oversCompleted: number;
   ballsInCurrentOver: number;
   isFreeHitActive: boolean;
-  targetScore?: number; // set for 2nd innings
+  targetScore?: number;
   extras: {
     wides: number;
     noBalls: number;
@@ -201,7 +346,7 @@ export interface Inning {
   currentBowlerId: string;
 }
 
-// ---- Match Performers ----
+// ---- Real-time Match Performers ----
 export interface MatchPerformers {
   bestBatsman?: {
     name: string;
@@ -232,7 +377,6 @@ export interface MatchPerformers {
   };
 }
 
-// ---- Match Info ----
 export interface MatchMeta {
   matchNumber: string;
   series: string;
@@ -252,6 +396,7 @@ export interface MatchMeta {
 export interface Match {
   id: string;
   tournamentId?: string;
+  tournamentName?: string;
   title: string;
   venue: string;
   city: string;
@@ -261,20 +406,26 @@ export interface Match {
   maxOversPerBowler: number;
   ballType: BallType;
   matchType: MatchFormat;
+  format?: MatchFormat;
   teamA: Team;
   teamB: Team;
+  team1?: Team;
+  team2?: Team;
   tossWinnerId: string;
   tossDecision: 'bat' | 'bowl';
   currentInningIndex: 0 | 1;
+  currentInnings?: number;
   innings: [Inning, Inning];
   status: MatchStatus;
   winnerTeamId?: string;
   winMargin?: string;
   winDescription?: string;
+  resultSummary?: string;
   obsTheme: ObsThemeId;
   meta: MatchMeta;
   performers?: MatchPerformers;
   superOver?: boolean;
+  isLiveBroadcast?: boolean;
 }
 
 // ---- Tournament ----
@@ -330,26 +481,22 @@ export interface Tournament {
   standings: TournamentTeamStats[];
   prizePool?: string;
   description?: string;
+  awards?: {
+    playerOfTheTournament?: string;
+    orangeCap?: { player: string; team: string; runs: number };
+    purpleCap?: { player: string; team: string; wickets: number };
+  };
 }
 
-// ---- Leaderboard ----
-export interface LeaderboardEntry {
-  rank: number;
-  playerId: string;
-  playerName: string;
-  teamName: string;
-  teamColor: string;
-  value: number;
-  extra?: string;
+// ---- Ground & Venue ----
+export interface Venue {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  capacity?: number;
+  floodlights: boolean;
+  pitchType: 'Spin Friendly' | 'Pace & Bounce' | 'Flat Batting' | 'Balanced Turf';
+  matchesHosted: number;
+  imageUrl?: string;
 }
-
-export interface TournamentLeaderboards {
-  orangeCap: LeaderboardEntry[];     // Most runs
-  purpleCap: LeaderboardEntry[];     // Most wickets
-  mostSixes: LeaderboardEntry[];
-  mostFours: LeaderboardEntry[];
-  bestStrikeRate: LeaderboardEntry[];
-  bestEconomy: LeaderboardEntry[];
-  bestCatcher: LeaderboardEntry[];
-}
-

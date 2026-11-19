@@ -86,14 +86,40 @@ function initials(name: string): string {
 }
 
 function battingAvg(p: Player): string {
-  const dism = p.innings - p.notOuts;
-  if (dism === 0) return p.runs > 0 ? '∞' : '-';
-  return (p.runs / dism).toFixed(2);
+  const innings = p.innings ?? p.overallStats?.innings ?? 0;
+  const notOuts = p.notOuts ?? p.overallStats?.notOuts ?? 0;
+  const runs = p.runs ?? p.overallStats?.runs ?? 0;
+  const dism = innings - notOuts;
+  if (dism === 0) return runs > 0 ? '∞' : '-';
+  return (runs / dism).toFixed(2);
 }
 
 function emptyPlayer(): Omit<Player, 'id'> {
+  const blankStats = {
+    matches: 0, innings: 0, runs: 0, highestScore: 0, notOuts: 0,
+    fifties: 0, hundreds: 0, strikeRate: 0, battingAverage: 0, fours: 0, sixes: 0, ducks: 0,
+    wickets: 0, bowlingOvers: 0, runsConceded: 0, bowlingEconomy: 0, bowlingAverage: 0, bowlingStrikeRate: 0, bestBowling: '0/0',
+    fourWicketHauls: 0, fiveWicketHauls: 0, catches: 0, runOuts: 0, stumpings: 0
+  };
   return {
+    fanClubId: `FC-LOC-${Date.now()}`,
     name: '',
+    country: 'India',
+    nationality: 'Indian',
+    teams: [],
+    isVerified: false,
+    isInternational: false,
+    isDomestic: false,
+    isLocalClub: true,
+    dataProvenance: {
+      source: 'localClub',
+      importedAt: new Date().toISOString(),
+    },
+    overallStats: blankStats,
+    statsByFormat: { domestic: blankStats },
+    achievements: [],
+    careerHistory: [],
+    followerCount: 0,
     role: 'batsman',
     battingStyle: 'RHB',
     bowlingStyle: undefined,
@@ -111,7 +137,7 @@ function emptyPlayer(): Omit<Player, 'id'> {
     wickets: 0,
     bowlingEconomy: 0,
     bowlingAverage: 0,
-    bestBowling: '-',
+    bestBowling: '0/0',
     catches: 0,
     runOuts: 0,
     stumpings: 0,
@@ -122,10 +148,20 @@ function emptyTeam(): Omit<Team, 'id'> {
   return {
     name: '',
     shortName: '',
+    city: 'Local',
+    country: 'India',
     color: '#1d4ed8',
     secondaryColor: '#7c3aed',
     logo: undefined,
     players: [],
+    teamStats: {
+      matches: 0,
+      won: 0,
+      lost: 0,
+      tied: 0,
+      noResult: 0,
+      winPercentage: 0,
+    },
   };
 }
 
@@ -550,10 +586,10 @@ interface PlayerDetailModalProps {
 function PlayerDetailModal({ player, teamColor, onClose, onEdit, onDelete }: PlayerDetailModalProps) {
   const avg = battingAvg(player);
 
-  const statRow = (label: string, value: string | number) => (
+  const statRow = (label: string, value: string | number | undefined) => (
     <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-semibold text-gray-900">{value}</span>
+      <span className="text-sm font-semibold text-gray-900">{value ?? '-'}</span>
     </div>
   );
 
@@ -604,9 +640,9 @@ function PlayerDetailModal({ player, teamColor, onClose, onEdit, onDelete }: Pla
       {/* Quick stat pills */}
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[
-          { label: 'M', value: player.matches },
-          { label: 'Runs', value: player.runs },
-          { label: 'Wkts', value: player.wickets },
+          { label: 'M', value: player.matches ?? player.overallStats?.matches ?? 0 },
+          { label: 'Runs', value: player.runs ?? player.overallStats?.runs ?? 0 },
+          { label: 'Wkts', value: player.wickets ?? player.overallStats?.wickets ?? 0 },
           { label: 'Avg', value: avg },
         ].map((s) => (
           <div key={s.label} className="bg-gray-50 rounded-xl p-2 text-center border border-gray-100">
@@ -619,17 +655,17 @@ function PlayerDetailModal({ player, teamColor, onClose, onEdit, onDelete }: Pla
       {/* Full stats */}
       <div className="bg-gray-50 rounded-xl p-3 mb-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Career Stats</p>
-        {statRow('Innings', player.innings)}
-        {statRow('Highest Score', player.highestScore)}
-        {statRow('Not Outs', player.notOuts)}
-        {statRow('Strike Rate', player.strikeRate > 0 ? player.strikeRate.toFixed(2) : '-')}
-        {statRow('50s / 100s', `${player.fifties} / ${player.hundreds}`)}
-        {statRow('Wickets', player.wickets)}
-        {statRow('Best Bowling', player.bestBowling)}
-        {statRow('Economy', player.bowlingEconomy > 0 ? player.bowlingEconomy.toFixed(2) : '-')}
-        {statRow('Catches', player.catches)}
-        {statRow('Run Outs', player.runOuts)}
-        {player.role === 'wicketkeeper' && statRow('Stumpings', player.stumpings)}
+        {statRow('Innings', player.innings ?? player.overallStats?.innings ?? 0)}
+        {statRow('Highest Score', player.highestScore ?? player.overallStats?.highestScore ?? 0)}
+        {statRow('Not Outs', player.notOuts ?? player.overallStats?.notOuts ?? 0)}
+        {statRow('Strike Rate', (player.strikeRate ?? player.overallStats?.strikeRate ?? 0) > 0 ? (player.strikeRate ?? player.overallStats?.strikeRate ?? 0).toFixed(2) : '-')}
+        {statRow('50s / 100s', `${player.fifties ?? player.overallStats?.fifties ?? 0} / ${player.hundreds ?? player.overallStats?.hundreds ?? 0}`)}
+        {statRow('Wickets', player.wickets ?? player.overallStats?.wickets ?? 0)}
+        {statRow('Best Bowling', player.bestBowling ?? player.overallStats?.bestBowling ?? '-')}
+        {statRow('Economy', (player.bowlingEconomy ?? player.overallStats?.bowlingEconomy ?? 0) > 0 ? (player.bowlingEconomy ?? player.overallStats?.bowlingEconomy ?? 0).toFixed(2) : '-')}
+        {statRow('Catches', player.catches ?? player.overallStats?.catches ?? 0)}
+        {statRow('Run Outs', player.runOuts ?? player.overallStats?.runOuts ?? 0)}
+        {player.role === 'wicketkeeper' && statRow('Stumpings', player.stumpings ?? player.overallStats?.stumpings ?? 0)}
       </div>
 
       <div className="flex justify-between gap-3">
@@ -882,22 +918,22 @@ function TeamDetail({ team, onBack, onTeamUpdate }: TeamDetailProps) {
                       <span className="font-medium text-gray-900 whitespace-nowrap">{p.name}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.matches}</td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.innings}</td>
-                  <td className="px-3 py-3 text-right font-semibold text-gray-900">{p.runs}</td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.highestScore}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.matches ?? p.overallStats?.matches ?? 0}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.innings ?? p.overallStats?.innings ?? 0}</td>
+                  <td className="px-3 py-3 text-right font-semibold text-gray-900">{p.runs ?? p.overallStats?.runs ?? 0}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.highestScore ?? p.overallStats?.highestScore ?? 0}</td>
                   <td className="px-3 py-3 text-right text-gray-700">{battingAvg(p)}</td>
                   <td className="px-3 py-3 text-right text-gray-700">
-                    {p.strikeRate > 0 ? p.strikeRate.toFixed(1) : '-'}
+                    {(p.strikeRate ?? p.overallStats?.strikeRate ?? 0) > 0 ? (p.strikeRate ?? p.overallStats?.strikeRate ?? 0).toFixed(1) : '-'}
                   </td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.fifties}</td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.hundreds}</td>
-                  <td className="px-3 py-3 text-right font-semibold text-gray-900">{p.wickets}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.fifties ?? p.overallStats?.fifties ?? 0}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.hundreds ?? p.overallStats?.hundreds ?? 0}</td>
+                  <td className="px-3 py-3 text-right font-semibold text-gray-900">{p.wickets ?? p.overallStats?.wickets ?? 0}</td>
                   <td className="px-3 py-3 text-right text-gray-700">
-                    {p.bowlingEconomy > 0 ? p.bowlingEconomy.toFixed(2) : '-'}
+                    {(p.bowlingEconomy ?? p.overallStats?.bowlingEconomy ?? 0) > 0 ? (p.bowlingEconomy ?? p.overallStats?.bowlingEconomy ?? 0).toFixed(2) : '-'}
                   </td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.bestBowling}</td>
-                  <td className="px-3 py-3 text-right text-gray-700">{p.catches}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.bestBowling ?? p.overallStats?.bestBowling ?? '-'}</td>
+                  <td className="px-3 py-3 text-right text-gray-700">{p.catches ?? p.overallStats?.catches ?? 0}</td>
                 </tr>
               ))}
             </tbody>
